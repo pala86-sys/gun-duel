@@ -397,8 +397,48 @@ function startLocalGame() {
   localGame.start(roster);
 }
 
+function resetGunGameUI() {
+  showGamePanels({ phase: 'pick', canPick: false });
+  els.endPanel?.classList.add('hidden');
+  els.revealPanel?.classList.add('hidden');
+  els.actionPanel?.classList.add('hidden');
+  els.waitingPanel?.classList.add('hidden');
+  if (els.revealResults) els.revealResults.innerHTML = '';
+  if (els.playersArea) els.playersArea.innerHTML = '';
+  selectedAction = null;
+  if (els.btnConfirm) els.btnConfirm.disabled = true;
+}
+
+function leaveGunGame() {
+  if (!confirm('確定離開？')) return;
+  cancelMatchSession();
+  online?.disconnect();
+  online = null;
+  localGame = null;
+  resetGunGameUI();
+  showGunHome();
+}
+
+function playAgainGun() {
+  if (playKind === 'online') {
+    resetGunGameUI();
+    showScreen('lobby');
+    return;
+  }
+  cancelMatchSession();
+  localGame = null;
+  resetGunGameUI();
+  if (playKind === 'local' && mode) {
+    startLocalGame();
+    return;
+  }
+  showScreen('setup');
+}
+
 function showEndFromPlayers(players, m) {
+  showScreen('game');
   showGamePanels({ phase: 'ended', canPick: false });
+  els.phaseHint.textContent = '遊戲結束';
   const alive = players.filter((p) => p.alive);
   if (m === 'duel') {
     if (alive.length === 1) {
@@ -618,7 +658,21 @@ function bindGunEvents() {
 
   document.getElementById('btn-open-stats')?.addEventListener('click', () => openStatsScreen('gun'));
   document.getElementById('btn-stats-back')?.addEventListener('click', statsBack);
+
+  document.getElementById('btn-quit')?.addEventListener('click', leaveGunGame);
+  document.getElementById('btn-play-again')?.addEventListener('click', playAgainGun);
   document.getElementById('btn-view-stats')?.addEventListener('click', () => openStatsScreen('gun'));
+
+  document.getElementById('btn-home')?.addEventListener('click', () => {
+    if (!confirm('確定離開並返回遊戲選擇？')) return;
+    cancelMatchSession();
+    online?.disconnect();
+    online = null;
+    localGame = null;
+    resetGunGameUI();
+    showHub();
+    updateHomeStatsLine();
+  });
 }
 
 function bootApp() {
@@ -636,28 +690,6 @@ function bootApp() {
 }
 
 bootApp();
-
-document.getElementById('btn-quit')?.addEventListener('click', () => {
-  if (confirm('確定離開？')) {
-    cancelMatchSession();
-    online?.disconnect();
-    online = null;
-    localGame = null;
-    showGunHome();
-  }
-});
-
-document.getElementById('btn-play-again')?.addEventListener('click', () => {
-  if (playKind === 'online') showScreen('lobby');
-  else showScreen('setup');
-});
-
-document.getElementById('btn-home')?.addEventListener('click', () => {
-  online?.disconnect();
-  online = null;
-  showHub();
-  updateHomeStatsLine();
-});
 
 document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
   if (confirm('確定清除兩款遊戲的所有戰績？')) {

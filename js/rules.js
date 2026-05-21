@@ -78,12 +78,23 @@ export function formatAction(id) {
   return `${a.label} ${a.name}`;
 }
 
+/** 戰報用：選 2、選 X */
+export function formatPick(id) {
+  return `選 ${ACTIONS[id].label}`;
+}
+
+/** 戰報用：選 2 射擊 */
+export function formatPickDetail(id) {
+  const a = ACTIONS[id];
+  return `選 ${a.label} ${a.name}`;
+}
+
 function describePair(nameA, actA, nameB, actB, dmgA, dmgB) {
   const parts = [];
   if (dmgA > 0) parts.push(`${nameA} -1 血`);
   if (dmgB > 0) parts.push(`${nameB} -1 血`);
   const dmgText = parts.length ? parts.join('、') : '雙方不扣血';
-  return `比大小：${nameA} ${ACTIONS[actA].label} vs ${nameB} ${ACTIONS[actB].label} → ${dmgText}`;
+  return `比大小：${nameA} ${formatPick(actA)} vs ${nameB} ${formatPick(actB)} → ${dmgText}`;
 }
 
 /**
@@ -120,7 +131,7 @@ export function resolveRound(ps, gameMode) {
         total += dL;
         if (dL > 0) {
           logs.push(
-            `${p.name}（${formatAction(cp)}）輸給左邊 ${left.name}（${formatAction(choices.get(left.id))}）→ -1 血`
+            `${p.name}（${formatPick(cp)}）輸給左邊 ${left.name}（${formatPick(choices.get(left.id))}）→ -1 血`
           );
         }
       }
@@ -129,13 +140,13 @@ export function resolveRound(ps, gameMode) {
         total += dR;
         if (dR > 0) {
           logs.push(
-            `${p.name}（${formatAction(cp)}）輸給右邊 ${right.name}（${formatAction(choices.get(right.id))}）→ -1 血`
+            `${p.name}（${formatPick(cp)}）輸給右邊 ${right.name}（${formatPick(choices.get(right.id))}）→ -1 血`
           );
         }
       }
       damageMap.set(p.id, total);
       if (total === 0) {
-        logs.push(`${p.name}：${formatAction(cp)}，左右皆平或閃避，不扣血`);
+        logs.push(`${p.name}：${formatPickDetail(cp)}，左右皆平或閃避，不扣血`);
       }
     }
   }
@@ -161,7 +172,7 @@ export function resolveRound(ps, gameMode) {
     const mistaken = p.choice !== validated ? '（子彈不足→刺刀）' : '';
     p.revealedAction = validated;
     logs.push(
-      `${p.name}：${formatAction(validated)}${mistaken}，${bulletNote}（${beforeBullets}→${p.bullets}）`
+      `${p.name}：${formatPickDetail(validated)}${mistaken}，${bulletNote}（${beforeBullets}→${p.bullets}）`
     );
   }
 
