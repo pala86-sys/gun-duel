@@ -38,6 +38,8 @@ let mode = null;
 let localStyle = 'pass';
 let setupCount = 3;
 let aiCount = 1;
+/** 單人 vs AI 多人模式：你 + 最多 9 位 AI（共 10 人） */
+const MAX_AI_OPPONENTS = 9;
 /** @type {string} */
 let flow = '';
 
@@ -291,6 +293,20 @@ function renderPlayerCards(players, phase, options = {}) {
         </article>`;
     })
     .join('');
+}
+
+function getMaxAiCount() {
+  if (localStyle !== 'ai') return Math.max(1, setupCount - 1);
+  return els.aiModeSelect?.value === 'multi' ? MAX_AI_OPPONENTS : 1;
+}
+
+function syncAiCountStepper() {
+  if (localStyle !== 'ai' || !els.aiCount) return;
+  const max = getMaxAiCount();
+  aiCount = Math.max(1, Math.min(aiCount, max));
+  els.aiCount.textContent = String(aiCount);
+  document.getElementById('btn-ai-minus')?.toggleAttribute('disabled', aiCount <= 1);
+  document.getElementById('btn-ai-plus')?.toggleAttribute('disabled', aiCount >= max);
 }
 
 function showGamePanels({ phase, canPick, isHost, playKind: pk }) {
@@ -565,12 +581,13 @@ document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
       els.fieldAiMode.classList.remove('hidden');
       els.fieldYourName.classList.remove('hidden');
       aiCount = 1;
-      els.aiCount.textContent = '1';
       els.aiModeSelect.onchange = () => {
         const isMulti = els.aiModeSelect.value === 'multi';
         els.fieldAiCount.classList.toggle('hidden', !isMulti);
+        syncAiCountStepper();
       };
       els.aiModeSelect.dispatchEvent(new Event('change'));
+      syncAiCountStepper();
       renderNameInputs();
       showScreen('setup');
     } else if (flow === 'online-create') {
@@ -603,12 +620,12 @@ document.getElementById('btn-count-plus').addEventListener('click', () => {
 
 document.getElementById('btn-ai-minus').addEventListener('click', () => {
   aiCount = Math.max(1, aiCount - 1);
-  els.aiCount.textContent = String(aiCount);
+  syncAiCountStepper();
 });
 
 document.getElementById('btn-ai-plus').addEventListener('click', () => {
-  aiCount = Math.min(setupCount - 1, aiCount + 1);
-  els.aiCount.textContent = String(aiCount);
+  aiCount = Math.min(getMaxAiCount(), aiCount + 1);
+  syncAiCountStepper();
 });
 
 document.getElementById('btn-start-game').addEventListener('click', () => {
