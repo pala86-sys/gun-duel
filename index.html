@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>槍戰對決</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 首頁 -->
+    <section id="screen-home" class="screen active">
+      <header class="hero">
+        <h1>槍戰對決</h1>
+        <p class="subtitle">暗中選牌 · 同時公布 · 比大小扣血</p>
+      </header>
+      <div class="mode-cards">
+        <button type="button" class="mode-card" data-flow="local-duel">
+          <span class="mode-icon">⚔️</span>
+          <strong>兩人對戰</strong>
+          <span>本機 · 3 滴血</span>
+        </button>
+        <button type="button" class="mode-card" data-flow="local-multi">
+          <span class="mode-icon">👥</span>
+          <strong>多人圍圈</strong>
+          <span>本機 · 5 滴血</span>
+        </button>
+        <button type="button" class="mode-card" data-flow="local-ai">
+          <span class="mode-icon">🤖</span>
+          <strong>單人 vs AI</strong>
+          <span>本機練習 · 可調 AI 人數</span>
+        </button>
+        <button type="button" class="mode-card highlight" data-flow="online-create">
+          <span class="mode-icon">📱</span>
+          <strong>開房（各用手機）</strong>
+          <span>建立房間 · 分享代碼</span>
+        </button>
+        <button type="button" class="mode-card highlight" data-flow="online-join">
+          <span class="mode-icon">🔗</span>
+          <strong>加入房間</strong>
+          <span>輸入 4 碼 · 用手機選牌</span>
+        </button>
+      </div>
+      <details class="rules-panel">
+        <summary>規則摘要</summary>
+        <div class="rules-text">
+          <p>每回合暗中選 <strong>3 / 2 / 1 / 0 / X</strong>，同時公布。數字小者扣 1 滴血。</p>
+          <p><strong>X 臥倒</strong>：對方 2/3 你不受傷；對方 1 你扣 1 血；對方永不受傷。</p>
+          <p>線上模式：每人用自己的手機加入同一房間，選牌只有你看得到。部署到雲端後不必同一 WiFi。</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- 本機設定 -->
+    <section id="screen-setup" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-setup-back">← 返回</button>
+        <h2 id="setup-title">遊戲設定</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field" id="field-player-count">
+          <span>玩家人數</span>
+          <div class="stepper">
+            <button type="button" id="btn-count-minus">−</button>
+            <output id="player-count">3</output>
+            <button type="button" id="btn-count-plus">+</button>
+          </div>
+        </label>
+        <label class="field hidden" id="field-ai-mode">
+          <span>對戰模式</span>
+          <select id="ai-mode-select">
+            <option value="duel">兩人（3 滴血）</option>
+            <option value="multi">多人圍圈（5 滴血）</option>
+          </select>
+        </label>
+        <label class="field hidden" id="field-ai-count">
+          <span>AI 對手數</span>
+          <div class="stepper">
+            <button type="button" id="btn-ai-minus">−</button>
+            <output id="ai-count">1</output>
+            <button type="button" id="btn-ai-plus">+</button>
+          </div>
+        </label>
+        <label class="field" id="field-your-name">
+          <span>你的名字</span>
+          <input type="text" id="input-your-name" value="玩家" maxlength="12">
+        </label>
+        <div id="name-inputs" class="name-grid"></div>
+        <button type="button" class="btn-primary" id="btn-start-game">開始遊戲</button>
+      </div>
+    </section>
+
+    <!-- 線上：開房 -->
+    <section id="screen-online-create" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" data-back="home">← 返回</button>
+        <h2>建立房間</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field">
+          <span>你的名字</span>
+          <input type="text" id="host-name" value="房主" maxlength="12">
+        </label>
+        <label class="field">
+          <span>模式</span>
+          <select id="host-mode">
+            <option value="duel">兩人對戰（3 滴血）</option>
+            <option value="multi">多人圍圈（5 滴血）</option>
+          </select>
+        </label>
+        <label class="field" id="host-max-wrap">
+          <span>房間人數上限</span>
+          <div class="stepper">
+            <button type="button" id="host-max-minus">−</button>
+            <output id="host-max">4</output>
+            <button type="button" id="host-max-plus">+</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>AI 補位（開局時自動加入）</span>
+          <div class="stepper">
+            <button type="button" id="host-ai-minus">−</button>
+            <output id="host-ai">0</output>
+            <button type="button" id="host-ai-plus">+</button>
+          </div>
+        </label>
+        <button type="button" class="btn-primary" id="btn-create-room">建立房間</button>
+        <p class="hint" id="server-hint">本機請執行 <code>npm start</code>。雲端部署後用手機開啟 Render 網址即可跨網路對戰（見 DEPLOY.md）。</p>
+      </div>
+    </section>
+
+    <!-- 線上：加入 -->
+    <section id="screen-online-join" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" data-back="home">← 返回</button>
+        <h2>加入房間</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field">
+          <span>房間代碼（4 碼）</span>
+          <input type="text" id="join-code" maxlength="4" placeholder="ABCD" class="code-input" autocapitalize="characters">
+        </label>
+        <label class="field">
+          <span>你的名字</span>
+          <input type="text" id="join-name" value="玩家" maxlength="12">
+        </label>
+        <button type="button" class="btn-primary" id="btn-join-room">加入</button>
+        <p id="join-error" class="hint error-text hidden"></p>
+      </div>
+    </section>
+
+    <!-- 線上大廳 -->
+    <section id="screen-lobby" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-leave-lobby">離開</button>
+        <h2>房間 <span id="lobby-code" class="room-code">----</span></h2>
+      </header>
+      <div class="lobby-body">
+        <div class="room-url-box" id="room-url-box">
+          <p class="url-label">邀請好友用瀏覽器開啟：</p>
+          <p class="url-text" id="invite-url"></p>
+          <p class="url-lan hidden" id="invite-lan"></p>
+        </div>
+        <ul id="lobby-players" class="lobby-list"></ul>
+        <button type="button" class="btn-primary hidden" id="btn-lobby-start">開始遊戲</button>
+        <p class="hint" id="lobby-wait">等待房主開始…</p>
+      </div>
+    </section>
+
+    <!-- 遊戲主畫面 -->
+    <section id="screen-game" class="screen">
+      <header class="game-bar">
+        <span id="round-label">第 1 回合</span>
+        <span id="phase-hint" class="phase-hint">請選擇行動</span>
+        <button type="button" class="btn-ghost btn-sm" id="btn-quit">離開</button>
+      </header>
+
+      <div id="players-area" class="players-area"></div>
+
+      <div id="waiting-panel" class="waiting-panel hidden">
+        <p id="waiting-text">等待其他玩家選牌…</p>
+        <div class="wait-progress"><span id="pick-progress">0/0</span></div>
+      </div>
+
+      <div id="action-panel" class="action-panel hidden">
+        <p class="select-prompt" id="select-prompt">選擇你的行動</p>
+        <div class="action-cards" id="action-cards"></div>
+        <button type="button" class="btn-primary" id="btn-confirm" disabled>確認選擇</button>
+      </div>
+
+      <div id="reveal-panel" class="reveal-panel hidden">
+        <div id="reveal-results"></div>
+        <button type="button" class="btn-primary hidden" id="btn-next-round">下一回合</button>
+        <p class="hint hidden" id="wait-host-next">等待房主進行下一回合…</p>
+      </div>
+
+      <div id="end-panel" class="end-panel hidden">
+        <h2 id="end-title">遊戲結束</h2>
+        <div id="end-winners"></div>
+        <button type="button" class="btn-primary" id="btn-play-again">再玩一局</button>
+        <button type="button" class="btn-ghost" id="btn-home">回首頁</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Render 一鍵部署：https://render.com
+# 在 Dashboard → New → Blueprint → 連結此 repo 即可
+
+services:
+  - type: web
+    name: gun-duel
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
