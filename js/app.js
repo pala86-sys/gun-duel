@@ -539,6 +539,7 @@ document.querySelectorAll('.mode-card').forEach((btn) => {
       renderNameInputs();
       showScreen('setup');
     } else if (flow === 'online-create') {
+      syncHostCreateForm();
       showScreen('onlineCreate');
     } else if (flow === 'online-join') {
       showScreen('onlineJoin');
@@ -640,40 +641,56 @@ document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
 });
 
 updateHomeStatsLine();
+syncHostCreateForm();
 
 // Online create
-let hostMax = 4;
+let hostMax = 2;
 let hostAi = 0;
 
 const hostMode = document.getElementById('host-mode');
 const hostMaxWrap = document.getElementById('host-max-wrap');
+const hostDuelHint = document.getElementById('host-duel-hint');
+const hostMaxEl = document.getElementById('host-max');
+const hostAiEl = document.getElementById('host-ai');
 
-hostMode.addEventListener('change', () => {
-  if (hostMode.value === 'duel') {
+function syncHostCreateForm() {
+  const isDuel = hostMode.value === 'duel';
+  if (isDuel) {
     hostMax = 2;
     hostMaxWrap.classList.add('hidden');
+    hostDuelHint?.classList.remove('hidden');
+    hostAi = Math.min(hostAi, 1);
   } else {
-    hostMax = 4;
     hostMaxWrap.classList.remove('hidden');
+    hostDuelHint?.classList.add('hidden');
+    if (hostMax < 3) hostMax = 4;
   }
-  document.getElementById('host-max').textContent = String(hostMax);
-});
+  hostMaxEl.textContent = String(hostMax);
+  hostAiEl.textContent = String(hostAi);
+}
+
+hostMode.addEventListener('change', syncHostCreateForm);
 
 document.getElementById('host-max-minus').addEventListener('click', () => {
+  if (hostMode.value === 'duel') return;
   hostMax = Math.max(3, hostMax - 1);
-  document.getElementById('host-max').textContent = String(hostMax);
+  hostMaxEl.textContent = String(hostMax);
+  hostAi = Math.min(hostAi, hostMax - 1);
+  hostAiEl.textContent = String(hostAi);
 });
 document.getElementById('host-max-plus').addEventListener('click', () => {
+  if (hostMode.value === 'duel') return;
   hostMax = Math.min(10, hostMax + 1);
-  document.getElementById('host-max').textContent = String(hostMax);
+  hostMaxEl.textContent = String(hostMax);
 });
 document.getElementById('host-ai-minus').addEventListener('click', () => {
   hostAi = Math.max(0, hostAi - 1);
-  document.getElementById('host-ai').textContent = String(hostAi);
+  hostAiEl.textContent = String(hostAi);
 });
 document.getElementById('host-ai-plus').addEventListener('click', () => {
-  hostAi = Math.min(hostMax - 1, hostAi + 1);
-  document.getElementById('host-ai').textContent = String(hostAi);
+  const cap = hostMode.value === 'duel' ? 1 : hostMax - 1;
+  hostAi = Math.min(cap, hostAi + 1);
+  hostAiEl.textContent = String(hostAi);
 });
 
 document.getElementById('btn-create-room').addEventListener('click', async () => {
@@ -681,7 +698,9 @@ document.getElementById('btn-create-room').addEventListener('click', async () =>
     await ensureOnline();
     playKind = 'online';
     const m = hostMode.value;
-    online.create(m, document.getElementById('host-name').value, hostMax, hostAi);
+    const maxPlayers = m === 'duel' ? 2 : hostMax;
+    const ai = m === 'duel' ? Math.min(hostAi, 1) : hostAi;
+    online.create(m, document.getElementById('host-name').value, maxPlayers, ai);
   } catch {
     /* toast shown */
   }
