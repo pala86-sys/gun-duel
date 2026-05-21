@@ -54,7 +54,7 @@ let chSelectedSpots = [];
 let chAiRunning = false;
 
 export function showChickenScreen(name) {
-  Object.values(screens).forEach((el) => el?.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
   screens[name]?.classList.add('active');
 }
 

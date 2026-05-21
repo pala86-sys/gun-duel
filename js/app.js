@@ -107,7 +107,7 @@ const els = {
 };
 
 function showScreen(name) {
-  Object.values(screens).forEach((el) => el?.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
   screens[name]?.classList.add('active');
 }
 
