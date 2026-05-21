@@ -644,8 +644,8 @@ function bindGunEvents() {
         syncAiCountStepper();
         showScreen('setup');
       } else if (flowId === 'online-create') {
-        syncHostCreateForm();
         showScreen('onlineCreate');
+        syncHostCreateForm();
       } else if (flowId === 'online-join') {
         showScreen('onlineJoin');
       }
@@ -711,24 +711,7 @@ function bindGunEvents() {
   });
 }
 
-function bootApp() {
-  bindHub(openChickenSetup);
-  bindGunEvents();
-  bindStatsClearButtons();
-  registerStatsOpener(renderStatsScreen);
-  try {
-    initChickenApp();
-  } catch (err) {
-    console.error('雞排模組初始化失敗', err);
-  }
-  window.__updateStatsLines = updateHomeStatsLine;
-  updateHomeStatsLine();
-  syncHostCreateForm();
-}
-
-bootApp();
-
-// --- 線上開房表單 ---
+// --- 線上開房表單（須在 bootApp 前初始化，避免 syncHostCreateForm 讀取未宣告變數）---
 let hostMax = 2;
 let hostAi = 0;
 
@@ -756,75 +739,99 @@ function syncHostCreateForm() {
   hostAiEl.textContent = String(hostAi);
 }
 
-hostMode?.addEventListener('change', syncHostCreateForm);
+function bindHostOnlineEvents() {
+  if (document.body.dataset.hostOnlineBound) return;
+  document.body.dataset.hostOnlineBound = '1';
 
-document.getElementById('host-max-minus')?.addEventListener('click', () => {
-  if (hostMode.value === 'duel') return;
-  hostMax = Math.max(3, hostMax - 1);
-  hostMaxEl.textContent = String(hostMax);
-  hostAi = Math.min(hostAi, hostMax - 1);
-  hostAiEl.textContent = String(hostAi);
-});
-document.getElementById('host-max-plus')?.addEventListener('click', () => {
-  if (hostMode.value === 'duel') return;
-  hostMax = Math.min(10, hostMax + 1);
-  hostMaxEl.textContent = String(hostMax);
-});
-document.getElementById('host-ai-minus')?.addEventListener('click', () => {
-  hostAi = Math.max(0, hostAi - 1);
-  hostAiEl.textContent = String(hostAi);
-});
-document.getElementById('host-ai-plus')?.addEventListener('click', () => {
-  const cap = hostMode.value === 'duel' ? 1 : hostMax - 1;
-  hostAi = Math.min(cap, hostAi + 1);
-  hostAiEl.textContent = String(hostAi);
-});
+  hostMode?.addEventListener('change', syncHostCreateForm);
 
-btnCreateRoom?.addEventListener('click', async () => {
-  if (!btnCreateRoom) return;
-  const prevText = btnCreateRoom.textContent;
-  btnCreateRoom.disabled = true;
-  btnCreateRoom.textContent = '連線中…';
+  document.getElementById('host-max-minus')?.addEventListener('click', () => {
+    if (!hostMode || hostMode.value === 'duel') return;
+    hostMax = Math.max(3, hostMax - 1);
+    if (hostMaxEl) hostMaxEl.textContent = String(hostMax);
+    hostAi = Math.min(hostAi, hostMax - 1);
+    if (hostAiEl) hostAiEl.textContent = String(hostAi);
+  });
+  document.getElementById('host-max-plus')?.addEventListener('click', () => {
+    if (!hostMode || hostMode.value === 'duel') return;
+    hostMax = Math.min(10, hostMax + 1);
+    if (hostMaxEl) hostMaxEl.textContent = String(hostMax);
+  });
+  document.getElementById('host-ai-minus')?.addEventListener('click', () => {
+    hostAi = Math.max(0, hostAi - 1);
+    if (hostAiEl) hostAiEl.textContent = String(hostAi);
+  });
+  document.getElementById('host-ai-plus')?.addEventListener('click', () => {
+    const cap = hostMode?.value === 'duel' ? 1 : hostMax - 1;
+    hostAi = Math.min(cap, hostAi + 1);
+    if (hostAiEl) hostAiEl.textContent = String(hostAi);
+  });
+
+  btnCreateRoom?.addEventListener('click', async () => {
+    const prevText = btnCreateRoom.textContent;
+    btnCreateRoom.disabled = true;
+    btnCreateRoom.textContent = '連線中…';
+    try {
+      await ensureOnline();
+      playKind = 'online';
+      const m = hostMode?.value ?? 'duel';
+      const maxPlayers = m === 'duel' ? 2 : hostMax;
+      const ai = m === 'duel' ? Math.min(hostAi, 1) : hostAi;
+      online.create(m, document.getElementById('host-name')?.value ?? '房主', maxPlayers, ai);
+    } catch (e) {
+      toast(e?.message || '無法連線伺服器');
+    } finally {
+      btnCreateRoom.disabled = false;
+      btnCreateRoom.textContent = prevText;
+    }
+  });
+
+  document.getElementById('btn-join-room')?.addEventListener('click', async () => {
+    const code = document.getElementById('join-code')?.value.trim().toUpperCase();
+    if (code.length !== 4) {
+      if (els.joinError) {
+        els.joinError.textContent = '請輸入 4 碼房間代碼';
+        els.joinError.classList.remove('hidden');
+      }
+      return;
+    }
+    els.joinError?.classList.add('hidden');
+    try {
+      await ensureOnline();
+      playKind = 'online';
+      online.join(code, document.getElementById('join-name')?.value ?? '玩家');
+    } catch {
+      /* toast from ensureOnline / onError */
+    }
+  });
+
+  document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
+    online?.start();
+  });
+
+  document.getElementById('btn-leave-lobby')?.addEventListener('click', () => {
+    cancelMatchSession();
+    online?.disconnect();
+    online = null;
+    showHub();
+  });
+}
+
+function bootApp() {
+  bindHub(openChickenSetup);
+  bindGunEvents();
+  bindStatsClearButtons();
+  bindHostOnlineEvents();
+  registerStatsOpener(renderStatsScreen);
   try {
-    await ensureOnline();
-    playKind = 'online';
-    const m = hostMode.value;
-    const maxPlayers = m === 'duel' ? 2 : hostMax;
-    const ai = m === 'duel' ? Math.min(hostAi, 1) : hostAi;
-    online.create(m, document.getElementById('host-name').value, maxPlayers, ai);
-  } catch (e) {
-    toast(e?.message || '無法連線伺服器');
-  } finally {
-    btnCreateRoom.disabled = false;
-    btnCreateRoom.textContent = prevText;
+    initChickenApp();
+  } catch (err) {
+    console.error('雞排模組初始化失敗', err);
   }
-});
+  window.__updateStatsLines = updateHomeStatsLine;
+  updateHomeStatsLine();
+  syncHostCreateForm();
+}
 
-document.getElementById('btn-join-room')?.addEventListener('click', async () => {
-  const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (code.length !== 4) {
-    els.joinError.textContent = '請輸入 4 碼房間代碼';
-    els.joinError.classList.remove('hidden');
-    return;
-  }
-  els.joinError.classList.add('hidden');
-  try {
-    await ensureOnline();
-    playKind = 'online';
-    online.join(code, document.getElementById('join-name').value);
-  } catch {
-    /* toast */
-  }
-});
-
-document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
-  online?.start();
-});
-
-document.getElementById('btn-leave-lobby')?.addEventListener('click', () => {
-  cancelMatchSession();
-  online?.disconnect();
-  online = null;
-  showHub();
-});
+bootApp();
 
