@@ -73,7 +73,7 @@ export function getSummary(gameId, myName) {
   };
 }
 
-/** 槍戰對決 */
+/** 請以火力掩護我 */
 export function buildGunMatchRecord({
   mode,
   playKind,
@@ -196,6 +196,6 @@ export function formatChickenMode(mode, playKind) {
 }
 
 export const GAME_LABELS = {
-  gun: '槍戰對決',
+  gun: '請以火力掩護我',
   chicken: '怪盜雞排',
 };

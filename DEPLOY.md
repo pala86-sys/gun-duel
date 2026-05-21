@@ -21,7 +21,7 @@
 ```bash
 git init
 git add .
-git commit -m "槍戰對決：可雲端部署"
+git commit -m "請以火力掩護我：可雲端部署"
 ```
 
 在 GitHub 建立新 repository（例如 `gun-duel`），然後：

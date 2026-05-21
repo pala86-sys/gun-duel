@@ -676,11 +676,11 @@ document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-clear-stats-gun')?.addEventListener('click', () => {
-  if (confirm('確定清除槍戰對決戰績？')) {
+  if (confirm(`確定清除「${GAME_LABELS.gun}」戰績？`)) {
     clearHistory('gun');
     renderStatsScreen();
     updateHomeStatsLine();
-    toast('已清除槍戰戰績');
+    toast(`已清除${GAME_LABELS.gun}戰績`);
   }
 });
 
@@ -804,10 +804,10 @@ function syncStatsSummaryLines() {
   const ch = getSummary('chicken');
   const text =
     gun.total + ch.total > 0
-      ? [gun.total > 0 && `槍戰 ${gun.total} 場`, ch.total > 0 && `雞排 ${ch.total} 場`]
+      ? [gun.total > 0 && `火力掩護 ${gun.total} 場`, ch.total > 0 && `雞排 ${ch.total} 場`]
           .filter(Boolean)
           .join(' · ')
-      : '槍戰 / 雞排 分開統計';
+      : '火力掩護 / 雞排 分開統計';
   if (els.statsSummaryLine) els.statsSummaryLine.textContent = text;
   const hubLine = document.getElementById('stats-summary-line-hub');
   if (hubLine) hubLine.textContent = text;
