@@ -40,6 +40,11 @@
           <strong>加入房間</strong>
           <span>輸入 4 碼 · 用手機選牌</span>
         </button>
+        <button type="button" class="mode-card" id="btn-open-stats">
+          <span class="mode-icon">📊</span>
+          <strong>戰績紀錄</strong>
+          <span id="stats-summary-line">查看歷史對戰</span>
+        </button>
       </div>
       <details class="rules-panel">
         <summary>規則摘要</summary>
@@ -47,8 +52,23 @@
           <p>每回合暗中選 <strong>3 / 2 / 1 / 0 / X</strong>，同時公布。數字小者扣 1 滴血。</p>
           <p><strong>X 臥倒</strong>：對方 2/3 你不受傷；對方 1 你扣 1 血；對方永不受傷。</p>
           <p>線上模式：每人用自己的手機加入同一房間，選牌只有你看得到。部署到雲端後不必同一 WiFi。</p>
+          <p>存活者皆無彈且<strong>仍有對手</strong>時每人 +1 子彈；對手已出局則不補彈。戰績儲存在本裝置瀏覽器。</p>
         </div>
       </details>
+    </section>
+
+    <!-- 戰績 -->
+    <section id="screen-stats" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-stats-back">← 返回</button>
+        <h2>戰績紀錄</h2>
+      </header>
+      <div class="stats-body">
+        <div id="stats-overview" class="stats-overview"></div>
+        <ul id="stats-list" class="stats-list"></ul>
+        <p id="stats-empty" class="hint hidden">尚無對戰紀錄，完成一局後會自動儲存於此裝置。</p>
+        <button type="button" class="btn-ghost btn-danger" id="btn-clear-stats">清除所有戰績</button>
+      </div>
     </section>
 
     <!-- 本機設定 -->
@@ -198,6 +218,7 @@
         <h2 id="end-title">遊戲結束</h2>
         <div id="end-winners"></div>
         <button type="button" class="btn-primary" id="btn-play-again">再玩一局</button>
+        <button type="button" class="btn-ghost" id="btn-view-stats">查看戰績</button>
         <button type="button" class="btn-ghost" id="btn-home">回首頁</button>
       </div>
     </section>

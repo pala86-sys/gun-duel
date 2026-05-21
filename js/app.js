@@ -6,6 +6,23 @@ import {
   renderTracker,
 } from './local-game.js';
 import { OnlineClient } from './online.js';
+import {
+  saveMatch,
+  getHistory,
+  getSummary,
+  clearHistory,
+  buildMatchRecord,
+  formatResult,
+  formatDate,
+  formatMode,
+} from './stats.js';
+import {
+  startMatchSession,
+  appendRoundLogs,
+  finishMatchSession,
+  cancelMatchSession,
+  peekSession,
+} from './match-session.js';
 
 /** @typedef {'local'|'online'} PlayKind */
 /** @typedef {'duel'|'multi'} GameMode */
@@ -31,12 +48,15 @@ let selectedAction = null;
 
 const screens = {
   home: document.getElementById('screen-home'),
+  stats: document.getElementById('screen-stats'),
   setup: document.getElementById('screen-setup'),
   onlineCreate: document.getElementById('screen-online-create'),
   onlineJoin: document.getElementById('screen-online-join'),
   lobby: document.getElementById('screen-lobby'),
   game: document.getElementById('screen-game'),
 };
+
+const PLAYER_NAME_KEY = 'gun-duel-player-name';
 
 const els = {
   setupTitle: document.getElementById('setup-title'),
@@ -74,6 +94,10 @@ const els = {
   inviteLan: document.getElementById('invite-lan'),
   joinError: document.getElementById('join-error'),
   toast: document.getElementById('toast'),
+  statsOverview: document.getElementById('stats-overview'),
+  statsList: document.getElementById('stats-list'),
+  statsEmpty: document.getElementById('stats-empty'),
+  statsSummaryLine: document.getElementById('stats-summary-line'),
 };
 
 function showScreen(name) {
@@ -85,6 +109,68 @@ function toast(msg) {
   els.toast.textContent = msg;
   els.toast.classList.remove('hidden');
   setTimeout(() => els.toast.classList.add('hidden'), 2800);
+}
+
+function getStoredPlayerName() {
+  return localStorage.getItem(PLAYER_NAME_KEY)?.trim() || '';
+}
+
+function setStoredPlayerName(name) {
+  if (name?.trim()) localStorage.setItem(PLAYER_NAME_KEY, name.trim().slice(0, 12));
+}
+
+function updateHomeStatsLine() {
+  const s = getSummary();
+  if (els.statsSummaryLine) {
+    els.statsSummaryLine.textContent =
+      s.total > 0 ? `${s.total} 場 · 勝 ${s.wins} / 敗 ${s.losses}` : '查看歷史對戰';
+  }
+}
+
+function recordMatchEnd(players, winners, extra = {}) {
+  const payload = finishMatchSession(players, winners);
+  if (!payload) return;
+  const record = buildMatchRecord({ ...payload, ...extra });
+  saveMatch(record);
+  updateHomeStatsLine();
+}
+
+function renderStatsScreen() {
+  const summary = getSummary();
+  const list = getHistory();
+  els.statsOverview.innerHTML = `
+    <div class="stat-box"><div class="num">${summary.total}</div><div class="lbl">總場次</div></div>
+    <div class="stat-box"><div class="num">${summary.wins}</div><div class="lbl">勝/存活</div></div>
+    <div class="stat-box"><div class="num">${summary.winRate}%</div><div class="lbl">勝率</div></div>
+  `;
+  els.statsEmpty.classList.toggle('hidden', list.length > 0);
+  els.statsList.innerHTML = list
+    .map((r) => {
+      const cls = r.result === 'lose' ? 'lose' : 'win';
+      const roundsHtml =
+        r.roundLogs?.length > 0
+          ? `<div class="stats-rounds"><details><summary>回合詳情（${r.roundLogs.length} 回合）</summary><ul>${r.roundLogs
+              .map(
+                (rr) =>
+                  `<li><strong>第 ${rr.round} 回合</strong><ul>${rr.logs.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul></li>`
+              )
+              .join('')}</ul></details></div>`
+          : '';
+      return `
+        <li class="stats-item ${cls}">
+          <div class="stats-item-header">
+            <span class="stats-item-result">${formatResult(r.result)}</span>
+            <span class="stats-item-meta">${formatDate(r.playedAt)}</span>
+          </div>
+          <div class="stats-item-meta">
+            ${escapeHtml(r.myName)} · ${formatMode(r.mode, r.playKind)}${r.roomCode ? ` · 房間 ${r.roomCode}` : ''}<br>
+            勝者：${escapeHtml(r.winners.join('、') || '—')} · ${r.rounds} 回合
+          </div>
+          ${roundsHtml}
+        </li>`;
+    })
+    .join('');
+  showScreen('stats');
 }
 
 function defaultNames(count) {
@@ -194,7 +280,13 @@ function showGamePanels({ phase, canPick, isHost, playKind: pk }) {
 
 function startLocalGame() {
   playKind = 'local';
-  const yourName = els.inputYourName.value.trim() || '玩家';
+  const yourName =
+    localStyle === 'ai'
+      ? els.inputYourName.value.trim() || '玩家'
+      : els.nameInputs.querySelector('input')?.value.trim() ||
+        getStoredPlayerName() ||
+        '玩家';
+  setStoredPlayerName(yourName);
   let roster;
 
   if (localStyle === 'ai') {
@@ -208,6 +300,13 @@ function startLocalGame() {
       isAi: false,
     }));
   }
+
+  startMatchSession({
+    mode,
+    playKind: 'local',
+    myName: yourName,
+    myPlayerId: 'p0',
+  });
 
   localGame = new LocalGameController(mode, {
     onPickPhase: ({ round, isFinalRound, picker, players }) => {
@@ -225,6 +324,7 @@ function startLocalGame() {
       bindActionButtons(picker);
     },
     onReveal: ({ round, players, logs, shouldEnd, awaitingFinalRound }) => {
+      appendRoundLogs(round, logs.map((l) => l.replace(/<[^>]+>/g, '')));
       showGamePanels({ phase: 'reveal', canPick: false, playKind: 'local' });
       els.phaseHint.textContent = '公布結果';
       renderPlayerCards(players, 'reveal');
@@ -235,6 +335,8 @@ function startLocalGame() {
       els.btnNextRound.textContent = shouldEnd ? '查看結果' : awaitingFinalRound ? '進行最後一回合' : '下一回合';
     },
     onEnd: ({ players, mode: m }) => {
+      const alive = players.filter((p) => p.alive);
+      recordMatchEnd(players, alive);
       showEndFromPlayers(players, m);
     },
   });
@@ -320,6 +422,17 @@ function applyOnlineState(state) {
   }
 
   if (state.phase === 'pick' || state.phase === 'reveal' || state.phase === 'ended') {
+    if (!peekSession() && state.round === 1 && state.phase === 'pick') {
+      startMatchSession({
+        mode: state.mode,
+        playKind: 'online',
+        roomCode: state.code,
+        myName: state.you?.name || '玩家',
+        myPlayerId: state.you?.id,
+      });
+      setStoredPlayerName(state.you?.name);
+    }
+
     showScreen('game');
     const you = state.you;
     const isHost = you?.id === state.hostPlayerId;
@@ -352,6 +465,7 @@ function applyOnlineState(state) {
             : '等待其他玩家選牌…';
       }
     } else if (state.phase === 'reveal') {
+      appendRoundLogs(state.round, state.lastLogs || []);
       showGamePanels({ phase: 'reveal', canPick: false, isHost, playKind: 'online' });
       const logs = state.lastLogs || [];
       els.revealResults.innerHTML = `
@@ -362,8 +476,9 @@ function applyOnlineState(state) {
         (state.mode === 'multi' && state.isFinalRound);
       els.btnNextRound.textContent = shouldEnd ? '查看結果' : state.awaitingFinalRound ? '進行最後一回合' : '下一回合';
     } else if (state.phase === 'ended') {
-      showGamePanels({ phase: 'ended', canPick: false, isHost, playKind: 'online' });
       const winners = state.winners || [];
+      recordMatchEnd(state.players, winners);
+      showGamePanels({ phase: 'ended', canPick: false, isHost, playKind: 'online' });
       els.endTitle.textContent = '遊戲結束';
       els.endWinners.innerHTML =
         winners.length > 0
@@ -489,6 +604,7 @@ els.btnNextRound.addEventListener('click', () => {
 
 document.getElementById('btn-quit').addEventListener('click', () => {
   if (confirm('確定離開？')) {
+    cancelMatchSession();
     online?.disconnect();
     online = null;
     localGame = null;
@@ -505,7 +621,25 @@ document.getElementById('btn-home').addEventListener('click', () => {
   online?.disconnect();
   online = null;
   showScreen('home');
+  updateHomeStatsLine();
 });
+
+document.getElementById('btn-open-stats')?.addEventListener('click', renderStatsScreen);
+document.getElementById('btn-stats-back')?.addEventListener('click', () => {
+  showScreen('home');
+  updateHomeStatsLine();
+});
+document.getElementById('btn-view-stats')?.addEventListener('click', renderStatsScreen);
+document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
+  if (confirm('確定清除所有戰績？')) {
+    clearHistory();
+    renderStatsScreen();
+    updateHomeStatsLine();
+    toast('已清除戰績');
+  }
+});
+
+updateHomeStatsLine();
 
 // Online create
 let hostMax = 4;
@@ -575,6 +709,7 @@ document.getElementById('btn-lobby-start').addEventListener('click', () => {
 });
 
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
+  cancelMatchSession();
   online?.disconnect();
   online = null;
   showScreen('home');

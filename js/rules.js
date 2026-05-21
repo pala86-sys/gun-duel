@@ -166,9 +166,10 @@ export function resolveRound(ps, gameMode) {
   }
 
   const allActive = ps.filter((p) => p.alive);
-  if (allActive.length > 0 && allActive.every((p) => p.bullets === 0)) {
+  // 僅在仍有對手（至少 2 名存活者）且皆無彈時補充；對手已出局則不補
+  if (allActive.length >= 2 && allActive.every((p) => p.bullets === 0)) {
     for (const p of allActive) p.bullets += 1;
-    logs.push('全員無彈：每人 +1 子彈');
+    logs.push('存活玩家皆無彈：每人 +1 子彈');
   }
 
   return { logs, choices, eliminatedCount };

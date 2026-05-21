@@ -661,6 +661,106 @@ select {
   margin-top: 8px;
 }
 
+.stats-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-box {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 8px;
+  text-align: center;
+}
+
+.stat-box .num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.stat-box .lbl {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.stats-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-item {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 2px solid var(--surface2);
+}
+
+.stats-item.win {
+  border-color: rgba(232, 184, 74, 0.35);
+}
+
+.stats-item.lose {
+  border-color: rgba(201, 74, 74, 0.25);
+}
+
+.stats-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.stats-item-result {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.stats-item.win .stats-item-result {
+  color: var(--gold);
+}
+
+.stats-item.lose .stats-item-result {
+  color: var(--red-bright);
+}
+
+.stats-item-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.stats-rounds {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.stats-rounds details summary {
+  cursor: pointer;
+  color: var(--gold);
+}
+
+.stats-rounds ul {
+  margin: 6px 0 0 1em;
+  line-height: 1.5;
+}
+
+.btn-danger {
+  color: var(--red-bright);
+  margin-top: 8px;
+}
+
 .toast {
   position: fixed;
   bottom: 24px;
