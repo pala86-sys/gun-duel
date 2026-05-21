@@ -1,5 +1,6 @@
 import { ChickenGame, SPOTS } from './chicken/game.js';
 import { SPOT_INFO, checkWinner } from './chicken/rules.js';
+import { pickChickenThiefSpot, pickChickenGuardSpots } from './chicken/ai.js';
 import {
   initChickenOnline,
   isChickenOnline,
@@ -48,12 +49,56 @@ export const els = {
 
 /** @type {ChickenGame|null} */
 let chickenGame = null;
+/** @type {'pass'|'ai'} */
+let chLocalStyle = 'pass';
 let chSetupCount = 2;
+let chAiCount = 1;
+let chHumanPlayerId = null;
 let chSelectedSpots = [];
+let chAiRunning = false;
 
 export function showChickenScreen(name) {
   Object.values(screens).forEach((el) => el?.classList.remove('active'));
   screens[name]?.classList.add('active');
+}
+
+function syncChSetupUI() {
+  const isAi = chLocalStyle === 'ai';
+  document.querySelectorAll('.ch-flow-card').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.chFlow === chLocalStyle);
+  });
+  document.getElementById('field-ch-player-count')?.classList.toggle('hidden', isAi);
+  document.getElementById('field-ch-ai-count')?.classList.toggle('hidden', !isAi);
+  document.getElementById('ch-pass-names')?.classList.toggle('hidden', isAi);
+  document.getElementById('field-ch-your-name')?.classList.toggle('hidden', !isAi);
+  const startBtn = document.getElementById('btn-ch-start');
+  const hint = document.getElementById('ch-setup-hint');
+  if (startBtn) {
+    startBtn.textContent = isAi ? '開始對戰' : '本機遊戲（傳手機）';
+  }
+  if (hint) {
+    hint.textContent = isAi
+      ? '僅由你操作；AI 會自動選牌。兩人模式固定 1 位 AI。'
+      : '同一裝置輪流操作，選牌時勿讓他人看到。';
+  }
+  if (isAi) {
+    chSetupCount = 1 + chAiCount;
+    if (chAiCount === 1) {
+      document.getElementById('btn-ch-ai-minus')?.setAttribute('disabled', 'disabled');
+    } else {
+      document.getElementById('btn-ch-ai-minus')?.removeAttribute('disabled');
+    }
+    if (chAiCount >= 3) {
+      document.getElementById('btn-ch-ai-plus')?.setAttribute('disabled', 'disabled');
+    } else {
+      document.getElementById('btn-ch-ai-plus')?.removeAttribute('disabled');
+    }
+    const aiOut = document.getElementById('ch-ai-count');
+    if (aiOut) aiOut.textContent = String(chAiCount);
+  } else {
+    if (els.chPlayerCount) els.chPlayerCount.textContent = String(chSetupCount);
+    renderChNameInputs();
+  }
 }
 
 function renderChNameInputs() {
@@ -114,15 +159,20 @@ function renderPlayers(state) {
       if (p.isStarter) tags.push('起始');
       if (p.isThief) tags.push('偷');
       if (p.hasKey) tags.push('🔑');
+      const real = chickenGame?.players.find((x) => x.id === p.id);
+      if (real?.isAi) tags.push('AI');
+      const isYou = chLocalStyle === 'ai' && p.id === chHumanPlayerId;
       let reveal = '';
       if (state.phase === 'reveal') {
         if (p.pick != null) reveal = `<div class="ch-pick-reveal">偷 ${p.pick}</div>`;
         else if (p.picks?.length) reveal = `<div class="ch-pick-reveal">守 ${p.picks.join('、')}</div>`;
+      } else if (chLocalStyle === 'ai' && real?.isAi && p.id !== state.pickerId) {
+        reveal = `<div class="ch-pick-reveal muted">電腦</div>`;
       }
       return `
-        <article class="player-card ch-player ${p.id === state.pickerId ? 'active-turn' : ''}">
+        <article class="player-card ch-player ${p.id === state.pickerId ? 'active-turn' : ''} ${isYou ? 'is-you' : ''}">
           <div class="player-header">
-            <span class="player-name">${escapeHtml(p.name)}</span>
+            <span class="player-name">${escapeHtml(p.name)}${isYou ? '（你）' : ''}</span>
             <span class="ch-score">${p.score} 分</span>
           </div>
           <div class="ch-tags">${tags.map((t) => `<span class="ch-tag">${t}</span>`).join('')}</div>
@@ -175,26 +225,77 @@ function renderSpotButtons(state) {
   els.chBtnConfirm.disabled = isGuard ? chSelectedSpots.length !== 2 : picker.pick == null;
 }
 
+function runChickenAiTurns() {
+  if (!chickenGame || chLocalStyle !== 'ai') return;
+  chAiRunning = true;
+  let steps = 0;
+  while (steps++ < 20) {
+    if (chickenGame.phase === 'reveal' || chickenGame.phase === 'ended') break;
+    const picker = chickenGame.getCurrentPicker();
+    if (!picker?.isAi) break;
+
+    if (chickenGame.getPickLimit() === 2) {
+      const spots = pickChickenGuardSpots(chickenGame, picker);
+      const err = chickenGame.submitGuardSpots(picker.id, spots);
+      if (err.error) {
+        toastCh(err.error);
+        break;
+      }
+    } else {
+      const spot = pickChickenThiefSpot(chickenGame, picker);
+      const err = chickenGame.submitPick(spot, picker.id);
+      if (err.error) {
+        toastCh(err.error);
+        break;
+      }
+    }
+  }
+  chAiRunning = false;
+  applyState(chickenGame.getPublicState());
+}
+
 function applyState(state) {
   const modeLabel = state.mode === '2p' ? '兩人' : `${state.players.length}人`;
   els.chRoundLabel.textContent = `第 ${state.round} 回合 · ${modeLabel} · 目標 ${state.threshold} 分`;
   els.chPhaseHint.textContent = getPhaseText(state);
 
   if (state.phase === 'reveal' || state.phase === 'ended') {
+    els.chWaitingPanel?.classList.add('hidden');
     els.chActionPanel.classList.add('hidden');
     els.chRevealPanel.classList.remove('hidden');
     renderPlayers(state);
     els.chRevealLog.innerHTML = `<ul class="reveal-log">${state.lastLogs.map((l) => `<li>${l}</li>`).join('')}</ul>`;
+    if (state.phase === 'reveal') {
+      els.chBtnNext?.classList.remove('hidden');
+      document.getElementById('ch-wait-host-next')?.classList.add('hidden');
+    } else {
+      els.chBtnNext?.classList.add('hidden');
+    }
     return;
   }
 
-  els.chActionPanel.classList.remove('hidden');
   els.chRevealPanel.classList.add('hidden');
+  els.chBtnNext?.classList.add('hidden');
   renderPlayers(state);
-  const picker = state.players.find((p) => p.id === state.pickerId);
-  els.chPrompt.textContent = picker
-    ? `${picker.name}，請按住選擇（勿讓他人看到）`
-    : '等待…';
+
+  const picker = chickenGame?.players.find((p) => p.id === state.pickerId);
+  if (chLocalStyle === 'ai' && picker?.isAi) {
+    els.chActionPanel.classList.add('hidden');
+    els.chWaitingPanel?.classList.remove('hidden');
+    const waitEl = document.getElementById('ch-waiting-text');
+    if (waitEl) waitEl.textContent = `${picker.name} 思考中…`;
+    if (!chAiRunning) setTimeout(() => runChickenAiTurns(), 350);
+    return;
+  }
+
+  els.chWaitingPanel?.classList.add('hidden');
+  els.chActionPanel.classList.remove('hidden');
+  els.chPrompt.textContent =
+    chLocalStyle === 'ai'
+      ? '選擇號碼（你的回合）'
+      : picker
+        ? `${picker.name}，請按住選擇（勿讓他人看到）`
+        : '等待…';
   renderSpotButtons(state);
 }
 
@@ -222,13 +323,24 @@ function showChickenEnd(state, winners) {
   }
 }
 
+function buildChickenRoster() {
+  if (chLocalStyle === 'ai') {
+    const you = document.getElementById('ch-your-name')?.value.trim() || '你';
+    const roster = [{ name: you, isAi: false }];
+    for (let i = 0; i < chAiCount; i++) roster.push({ name: `電腦 ${i + 1}`, isAi: true });
+    return roster;
+  }
+  return Array.from(els.chNames.querySelectorAll('input')).map((inp) => ({
+    name: inp.value.trim() || '玩家',
+    isAi: false,
+  }));
+}
+
 function startChickenGame() {
-  const names = Array.from(els.chNames.querySelectorAll('input')).map(
-    (inp) => inp.value.trim() || '玩家'
-  );
-  const mode = chSetupCount === 2 ? '2p' : 'multi';
+  const roster = buildChickenRoster();
+  const mode = roster.length === 2 ? '2p' : 'multi';
   const effectMode = els.chEffectMode.value;
-  chickenGame = new ChickenGame(mode, effectMode, names, {
+  chickenGame = new ChickenGame(mode, effectMode, roster, {
     onPick: (state) => applyState(state),
     onReveal: (state) => {
       appendRoundLogs(state.round, state.lastLogs);
@@ -246,17 +358,21 @@ function startChickenGame() {
     },
   });
 
+  const human = chickenGame.players.find((p) => !p.isAi);
+  chHumanPlayerId = human?.id ?? chickenGame.players[0].id;
+
   startMatchSession({
     game: 'chicken',
     mode,
-    playKind: 'local',
-    myName: chickenGame.players[0].name,
-    myPlayerId: chickenGame.players[0].id,
+    playKind: chLocalStyle === 'ai' ? 'ai' : 'local',
+    myName: human?.name ?? chickenGame.players[0].name,
+    myPlayerId: chHumanPlayerId,
   });
 
   showChickenScreen('chGame');
   els.chEndPanel.classList.add('hidden');
   els.chRevealPanel.classList.add('hidden');
+  els.chBtnNext?.classList.add('hidden');
   applyState(chickenGame.getPublicState());
 }
 
@@ -282,6 +398,19 @@ export function initChickenApp() {
     }
   });
 
+  document.querySelectorAll('.ch-flow-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      chLocalStyle = btn.dataset.chFlow === 'ai' ? 'ai' : 'pass';
+      if (chLocalStyle === 'ai') {
+        chAiCount = 1;
+        chSetupCount = 2;
+      } else {
+        chSetupCount = 2;
+      }
+      syncChSetupUI();
+    });
+  });
+
   document.getElementById('btn-ch-count-minus')?.addEventListener('click', () => {
     chSetupCount = Math.max(2, chSetupCount - 1);
     els.chPlayerCount.textContent = String(chSetupCount);
@@ -294,6 +423,16 @@ export function initChickenApp() {
     renderChNameInputs();
   });
 
+  document.getElementById('btn-ch-ai-minus')?.addEventListener('click', () => {
+    chAiCount = Math.max(1, chAiCount - 1);
+    syncChSetupUI();
+  });
+
+  document.getElementById('btn-ch-ai-plus')?.addEventListener('click', () => {
+    chAiCount = Math.min(3, chAiCount + 1);
+    syncChSetupUI();
+  });
+
   document.getElementById('btn-ch-start')?.addEventListener('click', startChickenGame);
 
   els.chBtnConfirm?.addEventListener('click', () => {
@@ -303,7 +442,7 @@ export function initChickenApp() {
     }
     if (!chickenGame) return;
     const picker = chickenGame.getCurrentPicker();
-    if (!picker) return;
+    if (!picker || picker.isAi) return;
     if (chickenGame.getPickLimit() === 2) {
       const picks = [...chSelectedSpots];
       if (picks.length !== 2) return;
@@ -377,15 +516,20 @@ export function recordChickenMatchFromOnline(state) {
 }
 
 export function openChickenSetup() {
+  chLocalStyle = 'pass';
   chSetupCount = 2;
+  chAiCount = 1;
+  chHumanPlayerId = null;
   if (els.chPlayerCount) els.chPlayerCount.textContent = '2';
-  renderChNameInputs();
+  syncChSetupUI();
   document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
   screens.chSetup?.classList.add('active');
 }
 
 export function showHubFromChicken() {
   chickenGame = null;
+  chHumanPlayerId = null;
+  chAiRunning = false;
   document.querySelectorAll('.screen').forEach((el) => el.classList.remove('active'));
   document.getElementById('screen-hub')?.classList.add('active');
 }

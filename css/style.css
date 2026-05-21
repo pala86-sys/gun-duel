@@ -118,6 +118,15 @@ body {
   background: linear-gradient(135deg, var(--surface) 0%, rgba(232, 184, 74, 0.06) 100%);
 }
 
+.ch-setup-modes {
+  margin-bottom: 16px;
+}
+
+.ch-flow-card.active {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(232, 184, 74, 0.1) 100%);
+}
+
 .mode-icon {
   font-size: 1.6rem;
   margin-bottom: 4px;

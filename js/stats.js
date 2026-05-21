@@ -190,7 +190,8 @@ export function formatGunMode(mode, playKind) {
 
 export function formatChickenMode(mode, playKind) {
   const m = mode === '2p' ? '兩人' : '多人';
-  const p = playKind === 'online' ? '線上' : '本機';
+  const p =
+    playKind === 'online' ? '線上' : playKind === 'ai' ? '單人 vs AI' : '本機';
   return `${p} · ${m}`;
 }
 

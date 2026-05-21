@@ -27,14 +27,18 @@ export class ChickenGame {
    * @param {string[]} names
    * @param {object} callbacks
    */
-  constructor(mode, effectMode, names, callbacks = {}, options = {}) {
+  constructor(mode, effectMode, roster, callbacks = {}, options = {}) {
     this.mode = mode;
     this.effectMode = effectMode;
     this.cb = callbacks;
     this.online = !!options.online;
-    this.players = names.map((name, i) => ({
+    const entries = roster.map((r) =>
+      typeof r === 'string' ? { name: r, isAi: false } : r
+    );
+    this.players = entries.map((r, i) => ({
       id: uid(),
-      name: name.trim() || `玩家${i + 1}`,
+      name: (r.name || '').trim() || `玩家${i + 1}`,
+      isAi: !!r.isAi,
       score: getInitialScore(mode, i),
       hasKey: false,
       pick: null,
