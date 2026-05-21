@@ -133,10 +133,12 @@ function renderPlayers(state) {
 }
 
 function renderSpotButtons(state) {
-  const picker = state.players.find((p) => p.id === state.pickerId);
+  if (!chickenGame) return;
+  // 必須改 game 內的玩家；state.players 是 getPublicState 的副本
+  const picker = chickenGame.players.find((p) => p.id === state.pickerId);
   if (!picker) return;
   const isGuard = state.pickLimit === 2;
-  chSelectedSpots = picker.picks ? [...picker.picks] : [];
+  chSelectedSpots = picker.picks?.length ? [...picker.picks] : picker.pick != null ? [picker.pick] : [];
 
   els.chSpotCards.innerHTML = SPOTS.map((spot) => {
     const info = SPOT_INFO[spot];
@@ -314,8 +316,9 @@ export function initChickenApp() {
         }
       }
     } else {
-      if (picker.pick == null) return;
-      const err = chickenGame.submitPick(picker.pick);
+      const spot = picker.pick ?? chSelectedSpots[0];
+      if (spot == null) return;
+      const err = chickenGame.submitPick(spot);
       if (err.error) toastCh(err.error);
     }
   });
