@@ -53,8 +53,10 @@ export class OnlineClient {
           return;
         }
         if (data.type === 'state' && this.onState) this.onState(data.state);
-        if (data.type === 'joined' && this.onJoined) {
-          this.onJoined({ lanIp: data.lanIp, port: data.port });
+        if (data.type === 'joined') {
+          if (this.onJoined) {
+            this.onJoined({ lanIp: data.lanIp, port: data.port });
+          }
           if (data.state && this.onState) this.onState(data.state);
         }
         if (data.type === 'error' && this.onError) this.onError(data.message);
