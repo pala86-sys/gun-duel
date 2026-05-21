@@ -159,6 +159,7 @@ export function resolveRound(ps, gameMode) {
           ? `消耗 ${-ACTIONS[validated].cost} 子彈`
           : '子彈不變';
     const mistaken = p.choice !== validated ? '（子彈不足→刺刀）' : '';
+    p.revealedAction = validated;
     logs.push(
       `${p.name}：${formatAction(validated)}${mistaken}，${bulletNote}（${beforeBullets}→${p.bullets}）`
     );

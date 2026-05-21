@@ -134,27 +134,28 @@ function bindActionButtons(picker) {
   });
 }
 
+/** 公布結果時用回合實際結算的行動，勿用結算後子彈數 re-validate */
+function actionForDisplay(p, phase) {
+  if (phase === 'reveal' || phase === 'ended') {
+    return p.revealedAction ?? p.resolvedAction ?? p.choice;
+  }
+  return p.choice;
+}
+
 function renderPlayerCards(players, phase, options = {}) {
   const { youId, hideOthersChoice } = options;
   els.playersArea.innerHTML = players
     .map((p) => {
       const isYou = youId && p.id === youId;
+      const displayAction = actionForDisplay(p, phase);
       const showChoice =
         phase === 'reveal' ||
         phase === 'ended' ||
         (phase === 'pick' && isYou && p.choice);
-      const choiceLabel =
-        showChoice && p.choice
-          ? typeof p.choice === 'string'
-            ? ACTIONS[validateChoice(p.choice, p.bullets)].label
-            : '✓'
-          : p.hasChosen
-            ? '✓'
-            : '';
 
       const reveal =
-        showChoice && typeof p.choice === 'string'
-          ? `<div class="reveal-action"><span class="action-num">${ACTIONS[validateChoice(p.choice, p.bullets)].label}</span> ${ACTIONS[validateChoice(p.choice, p.bullets)].name}</div>`
+        showChoice && typeof displayAction === 'string' && ACTIONS[displayAction]
+          ? `<div class="reveal-action"><span class="action-num">${ACTIONS[displayAction].label}</span> ${ACTIONS[displayAction].name}</div>`
           : phase === 'pick' && p.hasChosen && hideOthersChoice && !isYou
             ? `<div class="reveal-action muted">已選好</div>`
             : '';

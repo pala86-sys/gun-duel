@@ -61,6 +61,9 @@ export class LocalGameController {
 
   start(roster) {
     this.players = createLocalPlayers(this.mode, roster);
+    this.players.forEach((p) => {
+      p.revealedAction = null;
+    });
     this.round = 1;
     this.phase = 'pick';
     this.awaitingFinalRound = false;
@@ -144,6 +147,7 @@ export class LocalGameController {
     this.eliminatedThisSession += eliminatedCount;
     this.players.forEach((p) => {
       p.choice = null;
+      p.revealedAction = null;
     });
     this.updateFinalRoundSchedule();
     this.cb.onReveal({
@@ -163,6 +167,9 @@ export class LocalGameController {
       return;
     }
     this.round++;
+    this.players.forEach((p) => {
+      p.revealedAction = null;
+    });
     this.startPickPhase();
   }
 }

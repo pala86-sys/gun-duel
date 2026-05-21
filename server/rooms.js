@@ -117,6 +117,7 @@ export function startGame(room, requesterId) {
   room.lastLogs = [];
   room.players.forEach((p) => {
     p.choice = null;
+    p.revealedAction = null;
   });
   runAiPicks(room);
   return {};
@@ -186,6 +187,7 @@ export function advanceRound(room, requesterId) {
   room.phase = 'pick';
   room.players.forEach((p) => {
     p.choice = null;
+    p.revealedAction = null;
   });
   runAiPicks(room);
   return {};
@@ -236,13 +238,14 @@ export function serializeRoom(room, viewerPlayerId) {
       alive: p.alive,
       choice:
         room.phase === 'reveal' || room.phase === 'ended'
-          ? p.choice
+          ? p.revealedAction ?? p.choice
           : p.id === viewerPlayerId
             ? p.choice
             : p.choice
               ? true
               : null,
       hasChosen: p.choice !== null,
+      revealedAction: p.revealedAction ?? null,
     })),
   };
 }
