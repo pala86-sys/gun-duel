@@ -233,11 +233,50 @@
       </div>
     </section>
 
-    <!-- 怪盜雞排：設定 -->
+    <!-- 怪盜雞排：首頁 -->
     <section id="screen-ch-setup" class="screen">
+      <header class="hero hero-compact">
+        <button type="button" class="btn-ghost btn-back-hub" id="btn-ch-setup-back">← 遊戲選擇</button>
+        <h1>怪盜雞排 vs 魯蛇三世</h1>
+        <p class="subtitle">偷竊 · 防守 · 2～4 人</p>
+      </header>
+      <div class="mode-cards">
+        <button type="button" class="mode-card" data-ch-flow="local-ai">
+          <span class="mode-icon">🤖</span>
+          <strong>單人 vs AI</strong>
+          <span>本機練習 · 可調 AI 人數</span>
+        </button>
+        <button type="button" class="mode-card highlight" id="btn-ch-online-create">
+          <span class="mode-icon">📱</span>
+          <strong>多人對戰</strong>
+          <span>建立房間 · 分享代碼</span>
+        </button>
+        <button type="button" class="mode-card highlight" id="btn-ch-online-join">
+          <span class="mode-icon">🔗</span>
+          <strong>加入房間</strong>
+          <span>輸入 4 碼 · 用手機選牌</span>
+        </button>
+        <button type="button" class="mode-card" id="btn-ch-open-stats">
+          <span class="mode-icon">📊</span>
+          <strong>戰績紀錄</strong>
+          <span id="stats-summary-line-ch">完成對局後自動記錄</span>
+        </button>
+      </div>
+      <details class="rules-panel">
+        <summary>規則摘要</summary>
+        <div class="rules-text">
+          <p><strong>兩人</strong>：起始偷、後手守 2 處。起始 0 分、後手 2 分。先 10 分勝。</p>
+          <p><strong>三四人</strong>：起始守 2 處，其他人同時偷。起始 3/2/1/0 分。先 15 分結束，最高分勝。</p>
+          <p><strong>1</strong> 再偷 · <strong>2</strong> 鑰匙解鎖 5 · <strong>3</strong> 扣分 · <strong>5</strong> 需鑰匙才能偷</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- 怪盜雞排：單人 vs AI 設定 -->
+    <section id="screen-ch-ai-setup" class="screen">
       <header class="bar">
-        <button type="button" class="btn-ghost" id="btn-ch-setup-back">← 遊戲選擇</button>
-        <h2>怪盜雞排 vs 魯蛇三世</h2>
+        <button type="button" class="btn-ghost" id="btn-ch-ai-setup-back">← 返回</button>
+        <h2>單人 vs AI</h2>
       </header>
       <div class="setup-body">
         <label class="field" id="field-ch-ai-count">
@@ -260,27 +299,8 @@
           <span>你的名字</span>
           <input type="text" id="ch-your-name" value="怪盜雞排" maxlength="12">
         </label>
-        <details class="rules-panel">
-          <summary>規則摘要</summary>
-          <div class="rules-text">
-            <p><strong>兩人</strong>：起始偷、後手守 2 處。起始 0 分、後手 2 分。先 10 分勝。</p>
-            <p><strong>三四人</strong>：起始守 2 處，其他人同時偷。起始 3/2/1/0 分。先 15 分結束，最高分勝。</p>
-            <p><strong>1</strong> 再偷 · <strong>2</strong> 鑰匙解鎖 5 · <strong>3</strong> 扣分 · <strong>5</strong> 需鑰匙才能偷</p>
-          </div>
-        </details>
-        <button type="button" class="btn-primary" id="btn-ch-start">開始對戰（單人 vs AI）</button>
         <p class="hint" id="ch-setup-hint">僅由你操作；AI 會自動選牌。兩人模式固定 1 位 AI。</p>
-        <button type="button" class="mode-card highlight" id="btn-ch-online-create" style="width:100%;margin-top:10px">
-          <strong>多人對戰</strong>
-        </button>
-        <button type="button" class="mode-card highlight" id="btn-ch-online-join" style="width:100%;margin-top:8px">
-          <strong>🔗 加入房間</strong>
-        </button>
-        <button type="button" class="mode-card" id="btn-ch-open-stats" style="width:100%;margin-top:8px">
-          <span class="mode-icon">📊</span>
-          <strong>戰績紀錄</strong>
-          <span id="stats-summary-line-ch">完成對局後自動記錄</span>
-        </button>
+        <button type="button" class="btn-primary" id="btn-ch-start">開始遊戲</button>
       </div>
     </section>
 

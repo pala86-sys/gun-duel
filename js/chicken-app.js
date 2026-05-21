@@ -24,6 +24,7 @@ function escapeHtml(s) {
 
 const screens = {
   chSetup: document.getElementById('screen-ch-setup'),
+  chAiSetup: document.getElementById('screen-ch-ai-setup'),
   chGame: document.getElementById('screen-ch-game'),
 };
 
@@ -351,6 +352,19 @@ export function initChickenApp() {
     }
   });
 
+  document.getElementById('btn-ch-ai-setup-back')?.addEventListener('click', () => {
+    showChickenScreen('chSetup');
+  });
+
+  document.querySelectorAll('#screen-ch-setup .mode-card[data-ch-flow]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.chFlow === 'local-ai') {
+        syncChSetupUI();
+        showChickenScreen('chAiSetup');
+      }
+    });
+  });
+
   document.getElementById('btn-ch-ai-minus')?.addEventListener('click', () => {
     chAiCount = Math.max(1, chAiCount - 1);
     syncChSetupUI();
@@ -414,7 +428,8 @@ export function initChickenApp() {
   });
   document.getElementById('ch-btn-again')?.addEventListener('click', () => {
     els.chEndPanel.classList.add('hidden');
-    showChickenScreen('chSetup');
+    if (isChickenOnline()) showChickenScreen('chSetup');
+    else showChickenScreen('chAiSetup');
   });
 }
 
