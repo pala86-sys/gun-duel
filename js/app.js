@@ -25,7 +25,14 @@ import {
   cancelMatchSession,
   peekSession,
 } from './match-session.js';
-import { showGunHome, showHub, registerStatsOpener } from './hub.js';
+import {
+  showGunHome,
+  showHub,
+  registerStatsOpener,
+  statsFilterGame,
+  openStatsScreen,
+} from './hub.js';
+import { openChickenSetup } from './chicken-app.js';
 
 /** @typedef {'local'|'online'} PlayKind */
 /** @typedef {'duel'|'multi'} GameMode */
@@ -119,7 +126,21 @@ function setStoredPlayerName(name) {
 }
 
 function updateHomeStatsLine() {
-  syncStatsSummaryLines();
+  const gun = getSummary('gun');
+  const ch = getSummary('chicken');
+  if (els.statsSummaryLine) {
+    els.statsSummaryLine.textContent =
+      gun.total > 0 ? `共 ${gun.total} 場` : '完成對局後自動記錄';
+  }
+  const hubLine = document.getElementById('stats-summary-line-hub');
+  const hubTotal = gun.total + ch.total;
+  if (hubLine) {
+    hubLine.textContent = hubTotal > 0 ? `共 ${hubTotal} 場` : '完成對局後自動記錄';
+  }
+  const chLine = document.getElementById('stats-summary-line-ch');
+  if (chLine) {
+    chLine.textContent = ch.total > 0 ? `共 ${ch.total} 場` : '完成對局後自動記錄';
+  }
 }
 
 function recordGunMatchEnd(players, winners, extra = {}) {
@@ -160,45 +181,73 @@ function renderStatsList(list, formatModeFn, playerDetailFn) {
     .join('');
 }
 
-function renderStatsScreen() {
-  const gunSum = getSummary('gun');
-  const chSum = getSummary('chicken');
-  const gunList = getHistory('gun');
-  const chList = getHistory('chicken');
+function renderStatsOverviewBlock(gameId, icon) {
+  const sum = getSummary(gameId);
+  const label = GAME_LABELS[gameId];
+  return `
+    <div class="stats-game-block">
+      <h3 class="stats-game-title">${icon} ${label}</h3>
+      <div class="stats-overview">
+        <div class="stat-box"><div class="num">${sum.total}</div><div class="lbl">場次</div></div>
+        <div class="stat-box"><div class="num">${sum.wins}</div><div class="lbl">勝/存活</div></div>
+        <div class="stat-box"><div class="num">${sum.winRate}%</div><div class="lbl">勝率</div></div>
+      </div>
+    </div>`;
+}
 
-  els.statsOverview.innerHTML = `
-    <div class="stats-game-block">
-      <h3 class="stats-game-title">🔫 ${GAME_LABELS.gun}</h3>
-      <div class="stats-overview">
-        <div class="stat-box"><div class="num">${gunSum.total}</div><div class="lbl">場次</div></div>
-        <div class="stat-box"><div class="num">${gunSum.wins}</div><div class="lbl">勝/存活</div></div>
-        <div class="stat-box"><div class="num">${gunSum.winRate}%</div><div class="lbl">勝率</div></div>
-      </div>
-    </div>
-    <div class="stats-game-block">
-      <h3 class="stats-game-title">🍗 ${GAME_LABELS.chicken}</h3>
-      <div class="stats-overview">
-        <div class="stat-box"><div class="num">${chSum.total}</div><div class="lbl">場次</div></div>
-        <div class="stat-box"><div class="num">${chSum.wins}</div><div class="lbl">勝/存活</div></div>
-        <div class="stat-box"><div class="num">${chSum.winRate}%</div><div class="lbl">勝率</div></div>
-      </div>
-    </div>
-  `;
+function renderStatsScreen() {
+  const filter = statsFilterGame;
+  const showGun = !filter || filter === 'gun';
+  const showChicken = !filter || filter === 'chicken';
+
+  const titleEl = document.getElementById('stats-screen-title');
+  if (titleEl) {
+    titleEl.textContent = filter
+      ? `${GAME_LABELS[filter]} · 戰績`
+      : '戰績紀錄';
+  }
+
+  const gunList = showGun ? getHistory('gun') : [];
+  const chList = showChicken ? getHistory('chicken') : [];
+
+  els.statsOverview.innerHTML = [
+    showGun ? renderStatsOverviewBlock('gun', '🔫') : '',
+    showChicken ? renderStatsOverviewBlock('chicken', '🍗') : '',
+  ].join('');
 
   const hasAny = gunList.length > 0 || chList.length > 0;
   els.statsEmpty.classList.toggle('hidden', hasAny);
+  if (els.statsEmpty && filter) {
+    els.statsEmpty.textContent = `尚無${GAME_LABELS[filter]}對戰紀錄，完成一局後會自動儲存於此裝置。`;
+  } else if (els.statsEmpty) {
+    els.statsEmpty.textContent = '尚無對戰紀錄，完成一局後會自動儲存於此裝置。';
+  }
 
-  els.statsList.innerHTML = `
-    ${gunList.length ? `<li class="stats-section-label">${GAME_LABELS.gun}</li>` : ''}
-    ${renderStatsList(gunList, formatGunMode, (r) =>
-      r.players.map((p) => `${p.name}（${p.hp}血/${p.bullets}彈）`).join(' · ')
-    )}
-    ${chList.length ? `<li class="stats-section-label">${GAME_LABELS.chicken}</li>` : ''}
-    ${renderStatsList(chList, formatChickenMode, (r) =>
-      r.players.map((p) => `${p.name}（${p.score}分）`).join(' · ')
-    )}
-  `;
+  els.statsList.innerHTML = [
+    showGun && gunList.length
+      ? renderStatsList(gunList, formatGunMode, (r) =>
+          r.players.map((p) => `${p.name}（${p.hp}血/${p.bullets}彈）`).join(' · ')
+        )
+      : '',
+    showChicken && chList.length
+      ? renderStatsList(chList, formatChickenMode, (r) =>
+          r.players.map((p) => `${p.name}（${p.score}分）`).join(' · ')
+        )
+      : '',
+  ].join('');
+
+  document.getElementById('btn-clear-stats-gun')?.classList.toggle('hidden', filter !== 'gun');
+  document.getElementById('btn-clear-stats-chicken')?.classList.toggle('hidden', filter !== 'chicken');
+  document.getElementById('btn-clear-stats')?.classList.toggle('hidden', !!filter);
+
   showScreen('stats');
+}
+
+function statsBack() {
+  if (statsFilterGame === 'gun') showGunHome();
+  else if (statsFilterGame === 'chicken') openChickenSetup();
+  else showHub();
+  updateHomeStatsLine();
 }
 
 // --- Local game UI ---
@@ -585,12 +634,9 @@ document.getElementById('btn-home').addEventListener('click', () => {
   updateHomeStatsLine();
 });
 
-document.getElementById('btn-open-stats')?.addEventListener('click', renderStatsScreen);
-document.getElementById('btn-stats-back')?.addEventListener('click', () => {
-  showHub();
-  syncStatsSummaryLines();
-});
-document.getElementById('btn-view-stats')?.addEventListener('click', renderStatsScreen);
+document.getElementById('btn-open-stats')?.addEventListener('click', () => openStatsScreen('gun'));
+document.getElementById('btn-stats-back')?.addEventListener('click', statsBack);
+document.getElementById('btn-view-stats')?.addEventListener('click', () => openStatsScreen('gun'));
 document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
   if (confirm('確定清除兩款遊戲的所有戰績？')) {
     clearHistory();
@@ -719,24 +765,9 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
 });
 
 registerStatsOpener(renderStatsScreen);
-window.__updateStatsLines = syncStatsSummaryLines;
-syncStatsSummaryLines();
+window.__updateStatsLines = updateHomeStatsLine;
+updateHomeStatsLine();
 syncHostCreateForm();
-
-function syncStatsSummaryLines() {
-  updateHomeStatsLine();
-  const gun = getSummary('gun');
-  const ch = getSummary('chicken');
-  const text =
-    gun.total + ch.total > 0
-      ? [gun.total > 0 && `火力掩護 ${gun.total} 場`, ch.total > 0 && `雞排 ${ch.total} 場`]
-          .filter(Boolean)
-          .join(' · ')
-      : '火力掩護 / 雞排 分開統計';
-  if (els.statsSummaryLine) els.statsSummaryLine.textContent = text;
-  const hubLine = document.getElementById('stats-summary-line-hub');
-  if (hubLine) hubLine.textContent = text;
-}
 
 // AI mode: mode toggle in setup for multi AI
 document.querySelectorAll('#field-player-count').forEach(() => {});

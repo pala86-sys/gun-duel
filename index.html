@@ -28,7 +28,7 @@
         <button type="button" class="mode-card" id="btn-hub-stats">
           <span class="mode-icon">📊</span>
           <strong>戰績紀錄</strong>
-          <span id="stats-summary-line-hub">火力掩護 / 雞排 分開統計</span>
+          <span id="stats-summary-line-hub">完成對局後自動記錄</span>
         </button>
       </div>
     </section>
@@ -59,7 +59,7 @@
         <button type="button" class="mode-card" id="btn-open-stats">
           <span class="mode-icon">📊</span>
           <strong>戰績紀錄</strong>
-          <span id="stats-summary-line">火力掩護 / 雞排 分開統計</span>
+          <span id="stats-summary-line">完成對局後自動記錄</span>
         </button>
       </div>
       <details class="rules-panel">
@@ -77,7 +77,7 @@
     <section id="screen-stats" class="screen">
       <header class="bar">
         <button type="button" class="btn-ghost" id="btn-stats-back">← 返回</button>
-        <h2>戰績紀錄</h2>
+        <h2 id="stats-screen-title">戰績紀錄</h2>
       </header>
       <div class="stats-body">
         <div id="stats-overview" class="stats-overview"></div>
@@ -299,6 +299,11 @@
         </button>
         <button type="button" class="mode-card highlight" id="btn-ch-online-join" style="width:100%;margin-top:8px">
           <strong>🔗 加入房間</strong>
+        </button>
+        <button type="button" class="mode-card" id="btn-ch-open-stats" style="width:100%;margin-top:8px">
+          <span class="mode-icon">📊</span>
+          <strong>戰績紀錄</strong>
+          <span id="stats-summary-line-ch">完成對局後自動記錄</span>
         </button>
       </div>
     </section>

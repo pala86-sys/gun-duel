@@ -16,6 +16,7 @@ import {
   peekSession,
 } from './match-session.js';
 import { saveMatch, buildChickenMatchRecord } from './stats.js';
+import { openStatsScreen } from './hub.js';
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -434,6 +435,8 @@ export function initChickenApp() {
   });
 
   document.getElementById('btn-ch-start')?.addEventListener('click', startChickenGame);
+
+  document.getElementById('btn-ch-open-stats')?.addEventListener('click', () => openStatsScreen('chicken'));
 
   els.chBtnConfirm?.addEventListener('click', () => {
     if (isChickenOnline()) {

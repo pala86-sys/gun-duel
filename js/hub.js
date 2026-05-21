@@ -1,10 +1,20 @@
 import { initChickenApp, openChickenSetup } from './chicken-app.js';
 
-/** 由 app.js 注入 */
-export let openStatsScreen = () => {};
+/** @typedef {'gun'|'chicken'} StatsGameId */
+/** @type {StatsGameId|null} */
+export let statsFilterGame = null;
 
+let renderStatsImpl = () => {};
+
+/** 由 app.js 注入戰績畫面渲染 */
 export function registerStatsOpener(fn) {
-  openStatsScreen = fn;
+  renderStatsImpl = fn;
+}
+
+/** @param {StatsGameId|null} gameId null = 遊戲選擇頁（兩款都顯示） */
+export function openStatsScreen(gameId = null) {
+  statsFilterGame = gameId;
+  renderStatsImpl();
 }
 
 export function showHub() {
@@ -20,7 +30,7 @@ export function showGunHome() {
 document.getElementById('btn-hub-gun')?.addEventListener('click', showGunHome);
 document.getElementById('btn-hub-chicken')?.addEventListener('click', openChickenSetup);
 
-document.getElementById('btn-hub-stats')?.addEventListener('click', () => openStatsScreen());
+document.getElementById('btn-hub-stats')?.addEventListener('click', () => openStatsScreen(null));
 
 document.getElementById('btn-gun-home-back')?.addEventListener('click', showHub);
 
