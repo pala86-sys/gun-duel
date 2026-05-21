@@ -3,9 +3,14 @@
 /** @type {object|null} */
 let session = null;
 
+/**
+ * @param {object} meta
+ * @param {'gun'|'chicken'} meta.game
+ */
 export function startMatchSession(meta) {
   session = {
     ...meta,
+    game: meta.game || 'gun',
     roundLogs: [],
     saved: false,
   };
@@ -13,13 +18,15 @@ export function startMatchSession(meta) {
 
 export function appendRoundLogs(round, logs) {
   if (!session) return;
-  session.roundLogs.push({ round, logs: [...logs] });
+  const plain = logs.map((l) => String(l).replace(/<[^>]+>/g, ''));
+  session.roundLogs.push({ round, logs: plain });
 }
 
 export function finishMatchSession(players, winners) {
   if (!session || session.saved) return null;
   session.saved = true;
-  const record = {
+  const payload = {
+    game: session.game,
     mode: session.mode,
     playKind: session.playKind,
     roomCode: session.roomCode,
@@ -31,7 +38,7 @@ export function finishMatchSession(players, winners) {
     rounds: session.roundLogs.length,
   };
   session = null;
-  return record;
+  return payload;
 }
 
 export function peekSession() {

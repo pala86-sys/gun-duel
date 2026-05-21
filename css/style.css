@@ -673,6 +673,37 @@ select {
   gap: 8px;
 }
 
+.stats-game-block {
+  margin-bottom: 16px;
+}
+
+.stats-game-title {
+  font-size: 0.95rem;
+  color: var(--gold);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.stats-section-label {
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--gold);
+  font-weight: 700;
+  padding: 12px 0 6px;
+  margin-top: 8px;
+}
+
+.stats-clear-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.stats-clear-row .btn-ghost {
+  flex: 1;
+  font-size: 0.8rem;
+}
+
 .stat-box {
   background: var(--surface);
   border-radius: var(--radius);
@@ -759,6 +790,95 @@ select {
 .btn-danger {
   color: var(--red-bright);
   margin-top: 8px;
+}
+
+/* 遊戲選擇 */
+.game-pick-cards {
+  margin-top: 8px;
+}
+
+.game-pick.chicken-pick {
+  border-color: rgba(255, 160, 80, 0.35);
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(255, 140, 60, 0.08) 100%);
+}
+
+.hero-compact {
+  padding-top: 16px;
+}
+
+.hero-compact .btn-back-hub {
+  display: block;
+  margin: 0 auto 12px;
+  width: fit-content;
+}
+
+/* 怪盜雞排 */
+.ch-spot-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ch-spot-btn {
+  aspect-ratio: 0.85;
+  border: 2px solid var(--surface2);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  font-size: 0.65rem;
+}
+
+.ch-spot-btn .ch-spot-num {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.ch-spot-btn.selected {
+  border-color: #ff9f43;
+  background: rgba(255, 159, 67, 0.15);
+}
+
+.ch-spot-btn.locked {
+  opacity: 0.35;
+}
+
+.ch-score {
+  color: #ff9f43;
+  font-weight: 700;
+}
+
+.ch-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ch-tag {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 159, 67, 0.2);
+  color: #ff9f43;
+}
+
+.ch-pick-reveal {
+  margin-top: 8px;
+  text-align: center;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+#screen-ch-game .action-panel {
+  background: linear-gradient(transparent, var(--bg) 12px, var(--bg));
 }
 
 .toast {

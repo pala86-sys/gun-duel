@@ -90,6 +90,30 @@ export class OnlineClient {
     this.send('next');
   }
 
+  chCreate(name, playerCount, effectMode) {
+    this.send('ch-create', { name, playerCount, effectMode });
+  }
+
+  chJoin(code, name) {
+    this.send('ch-join', { code, name });
+  }
+
+  chStart() {
+    this.send('ch-start');
+  }
+
+  chPick(spot) {
+    this.send('ch-pick', { spot });
+  }
+
+  chPickGuard(spots) {
+    this.send('ch-pick', { spots });
+  }
+
+  chNext() {
+    this.send('ch-next');
+  }
+
   disconnect() {
     this.ws?.close();
     this.ws = null;

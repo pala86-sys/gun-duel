@@ -11,10 +11,12 @@ import {
   getHistory,
   getSummary,
   clearHistory,
-  buildMatchRecord,
+  buildGunMatchRecord,
   formatResult,
   formatDate,
-  formatMode,
+  formatGunMode,
+  formatChickenMode,
+  GAME_LABELS,
 } from './stats.js';
 import {
   startMatchSession,
@@ -23,6 +25,7 @@ import {
   cancelMatchSession,
   peekSession,
 } from './match-session.js';
+import { showGunHome, showHub, registerStatsOpener } from './hub.js';
 
 /** @typedef {'local'|'online'} PlayKind */
 /** @typedef {'duel'|'multi'} GameMode */
@@ -120,31 +123,19 @@ function setStoredPlayerName(name) {
 }
 
 function updateHomeStatsLine() {
-  const s = getSummary();
-  if (els.statsSummaryLine) {
-    els.statsSummaryLine.textContent =
-      s.total > 0 ? `${s.total} 場 · 勝 ${s.wins} / 敗 ${s.losses}` : '查看歷史對戰';
-  }
+  syncStatsSummaryLines();
 }
 
-function recordMatchEnd(players, winners, extra = {}) {
+function recordGunMatchEnd(players, winners, extra = {}) {
   const payload = finishMatchSession(players, winners);
   if (!payload) return;
-  const record = buildMatchRecord({ ...payload, ...extra });
+  const record = buildGunMatchRecord({ ...payload, ...extra });
   saveMatch(record);
   updateHomeStatsLine();
 }
 
-function renderStatsScreen() {
-  const summary = getSummary();
-  const list = getHistory();
-  els.statsOverview.innerHTML = `
-    <div class="stat-box"><div class="num">${summary.total}</div><div class="lbl">總場次</div></div>
-    <div class="stat-box"><div class="num">${summary.wins}</div><div class="lbl">勝/存活</div></div>
-    <div class="stat-box"><div class="num">${summary.winRate}%</div><div class="lbl">勝率</div></div>
-  `;
-  els.statsEmpty.classList.toggle('hidden', list.length > 0);
-  els.statsList.innerHTML = list
+function renderStatsList(list, formatModeFn, playerDetailFn) {
+  return list
     .map((r) => {
       const cls = r.result === 'lose' ? 'lose' : 'win';
       const roundsHtml =
@@ -163,13 +154,54 @@ function renderStatsScreen() {
             <span class="stats-item-meta">${formatDate(r.playedAt)}</span>
           </div>
           <div class="stats-item-meta">
-            ${escapeHtml(r.myName)} · ${formatMode(r.mode, r.playKind)}${r.roomCode ? ` · 房間 ${r.roomCode}` : ''}<br>
-            勝者：${escapeHtml(r.winners.join('、') || '—')} · ${r.rounds} 回合
+            ${escapeHtml(r.myName)} · ${formatModeFn(r.mode, r.playKind)}${r.roomCode ? ` · ${r.roomCode}` : ''}<br>
+            勝者：${escapeHtml(r.winners.join('、') || '—')} · ${r.rounds} 回合<br>
+            ${playerDetailFn(r)}
           </div>
           ${roundsHtml}
         </li>`;
     })
     .join('');
+}
+
+function renderStatsScreen() {
+  const gunSum = getSummary('gun');
+  const chSum = getSummary('chicken');
+  const gunList = getHistory('gun');
+  const chList = getHistory('chicken');
+
+  els.statsOverview.innerHTML = `
+    <div class="stats-game-block">
+      <h3 class="stats-game-title">🔫 ${GAME_LABELS.gun}</h3>
+      <div class="stats-overview">
+        <div class="stat-box"><div class="num">${gunSum.total}</div><div class="lbl">場次</div></div>
+        <div class="stat-box"><div class="num">${gunSum.wins}</div><div class="lbl">勝/存活</div></div>
+        <div class="stat-box"><div class="num">${gunSum.winRate}%</div><div class="lbl">勝率</div></div>
+      </div>
+    </div>
+    <div class="stats-game-block">
+      <h3 class="stats-game-title">🍗 ${GAME_LABELS.chicken}</h3>
+      <div class="stats-overview">
+        <div class="stat-box"><div class="num">${chSum.total}</div><div class="lbl">場次</div></div>
+        <div class="stat-box"><div class="num">${chSum.wins}</div><div class="lbl">勝/存活</div></div>
+        <div class="stat-box"><div class="num">${chSum.winRate}%</div><div class="lbl">勝率</div></div>
+      </div>
+    </div>
+  `;
+
+  const hasAny = gunList.length > 0 || chList.length > 0;
+  els.statsEmpty.classList.toggle('hidden', hasAny);
+
+  els.statsList.innerHTML = `
+    ${gunList.length ? `<li class="stats-section-label">${GAME_LABELS.gun}</li>` : ''}
+    ${renderStatsList(gunList, formatGunMode, (r) =>
+      r.players.map((p) => `${p.name}（${p.hp}血/${p.bullets}彈）`).join(' · ')
+    )}
+    ${chList.length ? `<li class="stats-section-label">${GAME_LABELS.chicken}</li>` : ''}
+    ${renderStatsList(chList, formatChickenMode, (r) =>
+      r.players.map((p) => `${p.name}（${p.score}分）`).join(' · ')
+    )}
+  `;
   showScreen('stats');
 }
 
@@ -302,6 +334,7 @@ function startLocalGame() {
   }
 
   startMatchSession({
+    game: 'gun',
     mode,
     playKind: 'local',
     myName: yourName,
@@ -336,7 +369,7 @@ function startLocalGame() {
     },
     onEnd: ({ players, mode: m }) => {
       const alive = players.filter((p) => p.alive);
-      recordMatchEnd(players, alive);
+      recordGunMatchEnd(players, alive);
       showEndFromPlayers(players, m);
     },
   });
@@ -424,6 +457,7 @@ function applyOnlineState(state) {
   if (state.phase === 'pick' || state.phase === 'reveal' || state.phase === 'ended') {
     if (!peekSession() && state.round === 1 && state.phase === 'pick') {
       startMatchSession({
+        game: 'gun',
         mode: state.mode,
         playKind: 'online',
         roomCode: state.code,
@@ -477,7 +511,7 @@ function applyOnlineState(state) {
       els.btnNextRound.textContent = shouldEnd ? '查看結果' : state.awaitingFinalRound ? '進行最後一回合' : '下一回合';
     } else if (state.phase === 'ended') {
       const winners = state.winners || [];
-      recordMatchEnd(state.players, winners);
+      recordGunMatchEnd(state.players, winners);
       showGamePanels({ phase: 'ended', canPick: false, isHost, playKind: 'online' });
       els.endTitle.textContent = '遊戲結束';
       els.endWinners.innerHTML =
@@ -548,9 +582,9 @@ document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
   });
 });
 
-document.getElementById('btn-setup-back').addEventListener('click', () => showScreen('home'));
+document.getElementById('btn-setup-back').addEventListener('click', () => showGunHome());
 document.querySelectorAll('[data-back="home"]').forEach((b) =>
-  b.addEventListener('click', () => showScreen('home'))
+  b.addEventListener('click', () => showGunHome())
 );
 
 document.getElementById('btn-count-minus').addEventListener('click', () => {
@@ -610,7 +644,7 @@ document.getElementById('btn-quit').addEventListener('click', () => {
     online?.disconnect();
     online = null;
     localGame = null;
-    showScreen('home');
+    showGunHome();
   }
 });
 
@@ -622,22 +656,40 @@ document.getElementById('btn-play-again').addEventListener('click', () => {
 document.getElementById('btn-home').addEventListener('click', () => {
   online?.disconnect();
   online = null;
-  showScreen('home');
+  showHub();
   updateHomeStatsLine();
 });
 
 document.getElementById('btn-open-stats')?.addEventListener('click', renderStatsScreen);
 document.getElementById('btn-stats-back')?.addEventListener('click', () => {
-  showScreen('home');
-  updateHomeStatsLine();
+  showHub();
+  syncStatsSummaryLines();
 });
 document.getElementById('btn-view-stats')?.addEventListener('click', renderStatsScreen);
 document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
-  if (confirm('確定清除所有戰績？')) {
+  if (confirm('確定清除兩款遊戲的所有戰績？')) {
     clearHistory();
     renderStatsScreen();
     updateHomeStatsLine();
-    toast('已清除戰績');
+    toast('已清除全部戰績');
+  }
+});
+
+document.getElementById('btn-clear-stats-gun')?.addEventListener('click', () => {
+  if (confirm('確定清除槍戰對決戰績？')) {
+    clearHistory('gun');
+    renderStatsScreen();
+    updateHomeStatsLine();
+    toast('已清除槍戰戰績');
+  }
+});
+
+document.getElementById('btn-clear-stats-chicken')?.addEventListener('click', () => {
+  if (confirm('確定清除怪盜雞排戰績？')) {
+    clearHistory('chicken');
+    renderStatsScreen();
+    updateHomeStatsLine();
+    toast('已清除雞排戰績');
   }
 });
 
@@ -738,11 +790,28 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
   cancelMatchSession();
   online?.disconnect();
   online = null;
-  showScreen('home');
+  showHub();
 });
 
-updateHomeStatsLine();
+registerStatsOpener(renderStatsScreen);
+window.__updateStatsLines = syncStatsSummaryLines;
+syncStatsSummaryLines();
 syncHostCreateForm();
+
+function syncStatsSummaryLines() {
+  updateHomeStatsLine();
+  const gun = getSummary('gun');
+  const ch = getSummary('chicken');
+  const text =
+    gun.total + ch.total > 0
+      ? [gun.total > 0 && `槍戰 ${gun.total} 場`, ch.total > 0 && `雞排 ${ch.total} 場`]
+          .filter(Boolean)
+          .join(' · ')
+      : '槍戰 / 雞排 分開統計';
+  if (els.statsSummaryLine) els.statsSummaryLine.textContent = text;
+  const hubLine = document.getElementById('stats-summary-line-hub');
+  if (hubLine) hubLine.textContent = text;
+}
 
 // AI mode: mode toggle in setup for multi AI
 document.querySelectorAll('#field-player-count').forEach(() => {});

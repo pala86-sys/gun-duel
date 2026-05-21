@@ -3,14 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>槍戰對決</title>
+  <title>卡牌對戰</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="app">
-    <!-- 首頁 -->
-    <section id="screen-home" class="screen active">
+    <!-- 遊戲選擇 -->
+    <section id="screen-hub" class="screen active">
       <header class="hero">
+        <h1>卡牌對戰</h1>
+        <p class="subtitle">選擇遊戲</p>
+      </header>
+      <div class="mode-cards game-pick-cards">
+        <button type="button" class="mode-card game-pick" id="btn-hub-gun">
+          <span class="mode-icon">🔫</span>
+          <strong>槍戰對決</strong>
+          <span>暗中選牌 · 比大小扣血</span>
+        </button>
+        <button type="button" class="mode-card game-pick chicken-pick" id="btn-hub-chicken">
+          <span class="mode-icon">🍗</span>
+          <strong>怪盜雞排 vs 魯蛇三世</strong>
+          <span>偷竊 · 防守 · 2～4 人</span>
+        </button>
+        <button type="button" class="mode-card" id="btn-hub-stats">
+          <span class="mode-icon">📊</span>
+          <strong>戰績紀錄</strong>
+          <span id="stats-summary-line-hub">槍戰 / 雞排 分開統計</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 槍戰對決首頁 -->
+    <section id="screen-home" class="screen">
+      <header class="hero hero-compact">
+        <button type="button" class="btn-ghost btn-back-hub" id="btn-gun-home-back">← 遊戲選擇</button>
         <h1>槍戰對決</h1>
         <p class="subtitle">暗中選牌 · 同時公布 · 比大小扣血</p>
       </header>
@@ -43,7 +69,7 @@
         <button type="button" class="mode-card" id="btn-open-stats">
           <span class="mode-icon">📊</span>
           <strong>戰績紀錄</strong>
-          <span id="stats-summary-line">查看歷史對戰</span>
+          <span id="stats-summary-line">槍戰 / 雞排 分開統計</span>
         </button>
       </div>
       <details class="rules-panel">
@@ -67,7 +93,11 @@
         <div id="stats-overview" class="stats-overview"></div>
         <ul id="stats-list" class="stats-list"></ul>
         <p id="stats-empty" class="hint hidden">尚無對戰紀錄，完成一局後會自動儲存於此裝置。</p>
-        <button type="button" class="btn-ghost btn-danger" id="btn-clear-stats">清除所有戰績</button>
+        <div class="stats-clear-row">
+          <button type="button" class="btn-ghost btn-danger" id="btn-clear-stats-gun">清除槍戰戰績</button>
+          <button type="button" class="btn-ghost btn-danger" id="btn-clear-stats-chicken">清除雞排戰績</button>
+        </div>
+        <button type="button" class="btn-ghost" id="btn-clear-stats">清除全部戰績</button>
       </div>
     </section>
 
@@ -219,7 +249,129 @@
         <div id="end-winners"></div>
         <button type="button" class="btn-primary" id="btn-play-again">再玩一局</button>
         <button type="button" class="btn-ghost" id="btn-view-stats">查看戰績</button>
-        <button type="button" class="btn-ghost" id="btn-home">回首頁</button>
+        <button type="button" class="btn-ghost" id="btn-home">回遊戲選擇</button>
+      </div>
+    </section>
+
+    <!-- 怪盜雞排：設定 -->
+    <section id="screen-ch-setup" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-ch-setup-back">← 遊戲選擇</button>
+        <h2>怪盜雞排 vs 魯蛇三世</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field">
+          <span>玩家人數（2～4）</span>
+          <div class="stepper">
+            <button type="button" id="btn-ch-count-minus">−</button>
+            <output id="ch-player-count">2</output>
+            <button type="button" id="btn-ch-count-plus">+</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>特殊效果</span>
+          <select id="ch-effect-mode">
+            <option value="full">完整規則</option>
+            <option value="simple">簡易（僅 1 再偷一次）</option>
+            <option value="none">最簡（無特殊效果）</option>
+          </select>
+        </label>
+        <div id="ch-local-only">
+          <div id="ch-name-inputs" class="name-grid"></div>
+        </div>
+        <details class="rules-panel">
+          <summary>規則摘要</summary>
+          <div class="rules-text">
+            <p><strong>兩人</strong>：起始偷、後手守 2 處。起始 0 分、後手 2 分。先 10 分勝。</p>
+            <p><strong>三四人</strong>：起始守 2 處，其他人同時偷。起始 3/2/1/0 分。先 15 分結束，最高分勝。</p>
+            <p><strong>1</strong> 再偷 · <strong>2</strong> 鑰匙解鎖 5 · <strong>3</strong> 扣分 · <strong>5</strong> 需鑰匙才能偷</p>
+          </div>
+        </details>
+        <button type="button" class="btn-primary" id="btn-ch-start">本機遊戲（傳手機）</button>
+        <button type="button" class="mode-card highlight" id="btn-ch-online-create" style="width:100%;margin-top:10px">
+          <strong>📱 開房（各用手機）</strong>
+        </button>
+        <button type="button" class="mode-card highlight" id="btn-ch-online-join" style="width:100%;margin-top:8px">
+          <strong>🔗 加入房間</strong>
+        </button>
+      </div>
+    </section>
+
+    <section id="screen-ch-online-create" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-ch-oc-back">← 返回</button>
+        <h2>雞排 · 開房</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field"><span>你的名字</span><input type="text" id="ch-host-name" value="房主" maxlength="12"></label>
+        <label class="field"><span>玩家人數</span>
+          <div class="stepper">
+            <button type="button" id="ch-oc-count-minus">−</button>
+            <output id="ch-oc-count">2</output>
+            <button type="button" id="ch-oc-count-plus">+</button>
+          </div>
+        </label>
+        <label class="field"><span>特殊效果</span>
+          <select id="ch-oc-effect"><option value="full">完整</option><option value="simple">簡易</option><option value="none">最簡</option></select>
+        </label>
+        <button type="button" class="btn-primary" id="btn-ch-create-room">建立房間</button>
+      </div>
+    </section>
+
+    <section id="screen-ch-online-join" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-ch-oj-back">← 返回</button>
+        <h2>雞排 · 加入</h2>
+      </header>
+      <div class="setup-body">
+        <label class="field"><span>房間代碼（4 碼，C 開頭）</span>
+          <input type="text" id="ch-join-code" maxlength="4" class="code-input" placeholder="C123" autocapitalize="characters">
+        </label>
+        <label class="field"><span>你的名字</span><input type="text" id="ch-join-name" value="玩家" maxlength="12"></label>
+        <button type="button" class="btn-primary" id="btn-ch-join-room">加入</button>
+        <p id="ch-join-error" class="hint error-text hidden"></p>
+      </div>
+    </section>
+
+    <section id="screen-ch-lobby" class="screen">
+      <header class="bar">
+        <button type="button" class="btn-ghost" id="btn-ch-leave-lobby">離開</button>
+        <h2>房間 <span id="ch-lobby-code" class="room-code">----</span></h2>
+      </header>
+      <div class="lobby-body">
+        <p class="url-text" id="ch-invite-url"></p>
+        <ul id="ch-lobby-players" class="lobby-list"></ul>
+        <button type="button" class="btn-primary hidden" id="btn-ch-lobby-start">開始遊戲</button>
+        <p class="hint" id="ch-lobby-wait">等待房主開始…</p>
+      </div>
+    </section>
+
+    <!-- 怪盜雞排：遊戲 -->
+    <section id="screen-ch-game" class="screen">
+      <header class="game-bar">
+        <span id="ch-round-label">第 1 回合</span>
+        <span id="ch-phase-hint" class="phase-hint"></span>
+        <button type="button" class="btn-ghost btn-sm" id="ch-btn-quit">離開</button>
+      </header>
+      <div id="ch-players-area" class="players-area"></div>
+      <div id="ch-waiting-panel" class="waiting-panel hidden">
+        <p id="ch-waiting-text">等待其他玩家…</p>
+      </div>
+      <div id="ch-action-panel" class="action-panel">
+        <p class="select-prompt" id="ch-prompt">選擇號碼</p>
+        <div class="ch-spot-cards" id="ch-spot-cards"></div>
+        <button type="button" class="btn-primary" id="ch-btn-confirm" disabled>確認選擇</button>
+      </div>
+      <div id="ch-reveal-panel" class="reveal-panel hidden">
+        <div id="ch-reveal-log"></div>
+        <button type="button" class="btn-primary hidden" id="ch-btn-next">下一回合</button>
+        <p class="hint hidden" id="ch-wait-host-next">等待房主進行下一回合…</p>
+      </div>
+      <div id="ch-end-panel" class="end-panel hidden">
+        <h2 id="ch-end-title">遊戲結束</h2>
+        <div id="ch-end-body"></div>
+        <button type="button" class="btn-primary" id="ch-btn-again">再玩一局</button>
+        <button type="button" class="btn-ghost" id="ch-btn-home">回遊戲選擇</button>
       </div>
     </section>
   </div>
@@ -227,5 +379,6 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="js/app.js" type="module"></script>
+  <script src="js/hub.js" type="module"></script>
 </body>
 </html>

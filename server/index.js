@@ -12,9 +12,19 @@ import {
   submitChoice,
   advanceRound,
   serializeRoom,
-  findPlayerBySocket,
   removePlayerFromAllRooms,
 } from './rooms.js';
+import {
+  createChickenRoom,
+  getChickenRoom,
+  addChickenPlayer,
+  startChickenGame,
+  chickenPick,
+  chickenNext,
+  serializeChickenRoom,
+  removeChickenPlayer,
+  setChickenBroadcaster,
+} from './chicken-rooms.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -32,20 +42,30 @@ app.use(express.static(ROOT));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-/** @type {Map<WebSocket, { roomCode: string, playerId: string }>} */
+/** @type {Map<WebSocket, { roomCode: string, playerId: string, gameType: 'gun'|'chicken' }>} */
 const sockets = new Map();
 
 function send(ws, type, payload = {}) {
   if (ws.readyState === 1) ws.send(JSON.stringify({ type, ...payload }));
 }
 
-function broadcastRoom(room) {
+function broadcastGunRoom(room) {
   for (const client of wss.clients) {
     const meta = sockets.get(client);
-    if (!meta || meta.roomCode !== room.code) continue;
+    if (!meta || meta.gameType !== 'gun' || meta.roomCode !== room.code) continue;
     send(client, 'state', { state: serializeRoom(room, meta.playerId) });
   }
 }
+
+function broadcastChickenRoom(room) {
+  for (const client of wss.clients) {
+    const meta = sockets.get(client);
+    if (!meta || meta.gameType !== 'chicken' || meta.roomCode !== room.code) continue;
+    send(client, 'state', { state: serializeChickenRoom(room, meta.playerId) });
+  }
+}
+
+setChickenBroadcaster(broadcastChickenRoom);
 
 function getLanIp() {
   const nets = os.networkInterfaces();
@@ -81,12 +101,35 @@ wss.on('connection', (ws) => {
         send(ws, 'error', { message: result.error });
         return;
       }
-      sockets.set(ws, { roomCode: room.code, playerId: result.player.id });
+      sockets.set(ws, { roomCode: room.code, playerId: result.player.id, gameType: 'gun' });
       send(ws, 'joined', {
         state: serializeRoom(room, result.player.id),
         lanIp: isProduction ? null : getLanIp(),
         port: PORT,
         publicUrl: isProduction ? null : undefined,
+      });
+      return;
+    }
+
+    if (type === 'ch-create') {
+      const playerCount = Math.min(4, Math.max(2, Number(msg.playerCount) || 2));
+      const effectMode = msg.effectMode || 'full';
+      const created = createChickenRoom(
+        playerCount,
+        effectMode,
+        msg.name || '房主',
+        ws
+      );
+      if (created.error) {
+        send(ws, 'error', { message: created.error });
+        return;
+      }
+      const { room, player } = created;
+      sockets.set(ws, { roomCode: room.code, playerId: player.id, gameType: 'chicken' });
+      send(ws, 'joined', {
+        state: serializeChickenRoom(room, player.id),
+        lanIp: isProduction ? null : getLanIp(),
+        port: PORT,
       });
       return;
     }
@@ -103,9 +146,27 @@ wss.on('connection', (ws) => {
         send(ws, 'error', { message: result.error });
         return;
       }
-      sockets.set(ws, { roomCode: room.code, playerId: result.player.id });
+      sockets.set(ws, { roomCode: room.code, playerId: result.player.id, gameType: 'gun' });
       send(ws, 'joined', { state: serializeRoom(room, result.player.id) });
-      broadcastRoom(room);
+      broadcastGunRoom(room);
+      return;
+    }
+
+    if (type === 'ch-join') {
+      const code = String(msg.code || '').toUpperCase();
+      const room = getChickenRoom(code);
+      if (!room) {
+        send(ws, 'error', { message: '找不到房間' });
+        return;
+      }
+      const result = addChickenPlayer(room, ws, msg.name || '玩家');
+      if (result.error) {
+        send(ws, 'error', { message: result.error });
+        return;
+      }
+      sockets.set(ws, { roomCode: room.code, playerId: result.player.id, gameType: 'chicken' });
+      send(ws, 'joined', { state: serializeChickenRoom(room, result.player.id) });
+      broadcastChickenRoom(room);
       return;
     }
 
@@ -114,6 +175,33 @@ wss.on('connection', (ws) => {
       send(ws, 'error', { message: '請先建立或加入房間' });
       return;
     }
+
+    if (meta.gameType === 'chicken') {
+      const room = getChickenRoom(meta.roomCode);
+      if (!room) {
+        send(ws, 'error', { message: '房間已關閉' });
+        return;
+      }
+      if (type === 'ch-start') {
+        const err = startChickenGame(room, meta.playerId);
+        if (err.error) send(ws, 'error', { message: err.error });
+        else broadcastChickenRoom(room);
+        return;
+      }
+      if (type === 'ch-pick') {
+        const err = chickenPick(room, meta.playerId, msg);
+        if (err.error) send(ws, 'error', { message: err.error });
+        return;
+      }
+      if (type === 'ch-next') {
+        const err = chickenNext(room, meta.playerId);
+        if (err.error) send(ws, 'error', { message: err.error });
+        return;
+      }
+      send(ws, 'error', { message: '未知操作' });
+      return;
+    }
+
     const room = getRoom(meta.roomCode);
     if (!room) {
       send(ws, 'error', { message: '房間已關閉' });
@@ -123,33 +211,34 @@ wss.on('connection', (ws) => {
     if (type === 'start') {
       const err = startGame(room, meta.playerId);
       if (err.error) send(ws, 'error', { message: err.error });
-      else broadcastRoom(room);
+      else broadcastGunRoom(room);
       return;
     }
 
     if (type === 'pick') {
       const err = submitChoice(room, meta.playerId, msg.action);
       if (err.error) send(ws, 'error', { message: err.error });
-      else broadcastRoom(room);
+      else broadcastGunRoom(room);
       return;
     }
 
     if (type === 'next') {
       const err = advanceRound(room, meta.playerId);
       if (err.error) send(ws, 'error', { message: err.error });
-      else broadcastRoom(room);
+      else broadcastGunRoom(room);
       return;
     }
   });
 
   ws.on('close', () => {
     removePlayerFromAllRooms(ws);
+    removeChickenPlayer(ws);
     sockets.delete(ws);
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`槍戰對決伺服器運行中，port ${PORT}`);
+  console.log(`卡牌對戰伺服器運行中，port ${PORT}`);
   if (!isProduction) {
     const lan = getLanIp();
     console.log(`本機：http://localhost:${PORT}`);
