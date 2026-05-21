@@ -546,83 +546,96 @@ function applyOnlineState(state) {
 
 // --- Events ---
 
+function bindGunEvents() {
+  document.querySelectorAll('#screen-home .mode-card[data-flow]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const flowId = btn.dataset.flow;
+      if (!flowId) return;
+      if (flowId === 'local-ai') {
+        playKind = 'local';
+        mode = 'duel';
+        if (els.setupTitle) els.setupTitle.textContent = '單人 vs AI';
+        els.fieldYourName?.classList.remove('hidden');
+        aiCount = 1;
+        if (els.aiModeSelect) {
+          els.aiModeSelect.onchange = () => {
+            const isMulti = els.aiModeSelect.value === 'multi';
+            els.fieldAiCount?.classList.toggle('hidden', !isMulti);
+            syncAiCountStepper();
+          };
+          els.aiModeSelect.dispatchEvent(new Event('change'));
+        }
+        syncAiCountStepper();
+        showScreen('setup');
+      } else if (flowId === 'online-create') {
+        syncHostCreateForm();
+        showScreen('onlineCreate');
+      } else if (flowId === 'online-join') {
+        showScreen('onlineJoin');
+      }
+    });
+  });
+
+  document.getElementById('btn-setup-back')?.addEventListener('click', () => showGunHome());
+  document.querySelectorAll('[data-back="home"]').forEach((b) =>
+    b.addEventListener('click', () => showGunHome())
+  );
+
+  document.getElementById('btn-ai-minus')?.addEventListener('click', () => {
+    aiCount = Math.max(1, aiCount - 1);
+    syncAiCountStepper();
+  });
+
+  document.getElementById('btn-ai-plus')?.addEventListener('click', () => {
+    aiCount = Math.min(getMaxAiCount(), aiCount + 1);
+    syncAiCountStepper();
+  });
+
+  document.getElementById('btn-start-game')?.addEventListener('click', () => {
+    mode = els.aiModeSelect?.value === 'multi' ? 'multi' : 'duel';
+    startLocalGame();
+  });
+
+  els.btnConfirm?.addEventListener('click', () => {
+    if (!selectedAction) return;
+    if (playKind === 'local' && localGame) {
+      localGame.confirmPick(selectedAction);
+      return;
+    }
+    if (playKind === 'online' && online) {
+      online.pick(selectedAction);
+      if (els.btnConfirm) els.btnConfirm.disabled = true;
+    }
+  });
+
+  els.btnNextRound?.addEventListener('click', () => {
+    if (playKind === 'local' && localGame) {
+      localGame.nextRound();
+      return;
+    }
+    if (playKind === 'online' && online) online.next();
+  });
+
+  document.getElementById('btn-open-stats')?.addEventListener('click', () => openStatsScreen('gun'));
+  document.getElementById('btn-stats-back')?.addEventListener('click', statsBack);
+  document.getElementById('btn-view-stats')?.addEventListener('click', () => openStatsScreen('gun'));
+}
+
 function bootApp() {
   bindHub(openChickenSetup);
-  initChickenApp();
+  bindGunEvents();
   registerStatsOpener(renderStatsScreen);
+  try {
+    initChickenApp();
+  } catch (err) {
+    console.error('雞排模組初始化失敗', err);
+  }
   window.__updateStatsLines = updateHomeStatsLine;
   updateHomeStatsLine();
   syncHostCreateForm();
 }
 
 bootApp();
-
-document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    flow = btn.dataset.flow;
-    if (!flow) return;
-    if (flow === 'local-ai') {
-      playKind = 'local';
-      mode = 'duel';
-      els.setupTitle.textContent = '單人 vs AI';
-      els.fieldYourName.classList.remove('hidden');
-      aiCount = 1;
-      els.aiModeSelect.onchange = () => {
-        const isMulti = els.aiModeSelect.value === 'multi';
-        els.fieldAiCount.classList.toggle('hidden', !isMulti);
-        syncAiCountStepper();
-      };
-      els.aiModeSelect.dispatchEvent(new Event('change'));
-      syncAiCountStepper();
-      showScreen('setup');
-    } else if (flow === 'online-create') {
-      syncHostCreateForm();
-      showScreen('onlineCreate');
-    } else if (flow === 'online-join') {
-      showScreen('onlineJoin');
-    }
-  });
-});
-
-document.getElementById('btn-setup-back')?.addEventListener('click', () => showGunHome());
-document.querySelectorAll('[data-back="home"]').forEach((b) =>
-  b.addEventListener('click', () => showGunHome())
-);
-
-document.getElementById('btn-ai-minus')?.addEventListener('click', () => {
-  aiCount = Math.max(1, aiCount - 1);
-  syncAiCountStepper();
-});
-
-document.getElementById('btn-ai-plus')?.addEventListener('click', () => {
-  aiCount = Math.min(getMaxAiCount(), aiCount + 1);
-  syncAiCountStepper();
-});
-
-document.getElementById('btn-start-game')?.addEventListener('click', () => {
-  mode = els.aiModeSelect.value === 'multi' ? 'multi' : 'duel';
-  startLocalGame();
-});
-
-els.btnConfirm.addEventListener('click', () => {
-  if (!selectedAction) return;
-  if (playKind === 'local' && localGame) {
-    localGame.confirmPick(selectedAction);
-    return;
-  }
-  if (playKind === 'online' && online) {
-    online.pick(selectedAction);
-    els.btnConfirm.disabled = true;
-  }
-});
-
-els.btnNextRound.addEventListener('click', () => {
-  if (playKind === 'local' && localGame) {
-    localGame.nextRound();
-    return;
-  }
-  if (playKind === 'online' && online) online.next();
-});
 
 document.getElementById('btn-quit')?.addEventListener('click', () => {
   if (confirm('確定離開？')) {
@@ -646,9 +659,6 @@ document.getElementById('btn-home')?.addEventListener('click', () => {
   updateHomeStatsLine();
 });
 
-document.getElementById('btn-open-stats')?.addEventListener('click', () => openStatsScreen('gun'));
-document.getElementById('btn-stats-back')?.addEventListener('click', statsBack);
-document.getElementById('btn-view-stats')?.addEventListener('click', () => openStatsScreen('gun'));
 document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
   if (confirm('確定清除兩款遊戲的所有戰績？')) {
     clearHistory();
