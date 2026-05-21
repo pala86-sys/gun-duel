@@ -27,15 +27,23 @@ export function pickChickenThiefSpot(game, player) {
   return legal[legal.length - 1];
 }
 
-/** 防守盲選 2 格：不可讀取偷竊方已選號碼 */
-function pickTwoGuardSpotsBlind() {
-  const pool = [
-    { spot: 4, w: 4 },
-    { spot: 5, w: 3 },
-    { spot: 3, w: 2 },
-    { spot: 2, w: 1.5 },
-    { spot: 1, w: 1 },
-  ];
+/** 防守盲選 2 格：不可讀取偷竊方已選號碼；依對手是否持鑰匙調整權重 */
+function pickTwoGuardSpotsBlind({ thiefHasKey = false } = {}) {
+  const pool = thiefHasKey
+    ? [
+        { spot: 4, w: 4 },
+        { spot: 5, w: 4 },
+        { spot: 3, w: 2 },
+        { spot: 2, w: 1.5 },
+        { spot: 1, w: 1 },
+      ]
+    : [
+        { spot: 4, w: 5 },
+        { spot: 3, w: 2.5 },
+        { spot: 2, w: 2 },
+        { spot: 1, w: 1.5 },
+        { spot: 5, w: 0.12 },
+      ];
   const picks = [];
   const remaining = [...pool];
   while (picks.length < 2 && remaining.length) {
@@ -61,12 +69,14 @@ function pickTwoGuardSpotsBlind() {
 export function pickChickenGuardSpots(game, picker) {
   if (game.mode === '2p' && game.phase === 'guard-pick') {
     // 實體規則：守方選 2 格時不知道偷了哪一格，AI 不可讀 thief.pick
-    return pickTwoGuardSpotsBlind();
+    const thief = game.players[game.thiefIndex];
+    return pickTwoGuardSpotsBlind({ thiefHasKey: !!thief?.hasKey });
   }
 
   if (game.mode === 'multi' && game.phase === 'guard-pick') {
-    if (Math.random() < 0.75) return [4, 5];
-    return pickTwoGuardSpotsBlind();
+    const anyThiefHasKey = game.players.some((p) => p.id !== picker.id && p.hasKey);
+    if (anyThiefHasKey && Math.random() < 0.65) return [4, 5];
+    return pickTwoGuardSpotsBlind({ thiefHasKey: anyThiefHasKey });
   }
 
   return [4, 5];
