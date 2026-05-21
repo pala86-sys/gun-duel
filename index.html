@@ -188,9 +188,8 @@
       </header>
       <div class="lobby-body">
         <div class="room-url-box" id="room-url-box">
-          <p class="url-label">邀請好友用瀏覽器開啟：</p>
-          <p class="url-text" id="invite-url"></p>
-          <p class="url-lan hidden" id="invite-lan"></p>
+          <p class="url-share-line">分享網址：<span class="url-text" id="invite-url"></span></p>
+          <p class="url-hint">邀請好友加入房間，滿員後即可開始遊戲。</p>
         </div>
         <ul id="lobby-players" class="lobby-list"></ul>
         <button type="button" class="btn-primary hidden" id="btn-lobby-start">開始遊戲</button>
@@ -327,7 +326,10 @@
         <h2>房間 <span id="ch-lobby-code" class="room-code">----</span></h2>
       </header>
       <div class="lobby-body">
-        <p class="url-text" id="ch-invite-url"></p>
+        <div class="room-url-box">
+          <p class="url-share-line">分享網址：<span class="url-text" id="ch-invite-url"></span></p>
+          <p class="url-hint">邀請好友加入房間，滿員後即可開始遊戲。</p>
+        </div>
         <ul id="ch-lobby-players" class="lobby-list"></ul>
         <button type="button" class="btn-primary hidden" id="btn-ch-lobby-start">開始遊戲</button>
         <p class="hint" id="ch-lobby-wait">等待房主開始…</p>

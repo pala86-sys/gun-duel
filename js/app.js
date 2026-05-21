@@ -98,7 +98,6 @@ const els = {
   btnLobbyStart: document.getElementById('btn-lobby-start'),
   lobbyWait: document.getElementById('lobby-wait'),
   inviteUrl: document.getElementById('invite-url'),
-  inviteLan: document.getElementById('invite-lan'),
   joinError: document.getElementById('join-error'),
   toast: document.getElementById('toast'),
   statsOverview: document.getElementById('stats-overview'),
@@ -503,21 +502,6 @@ async function ensureOnline() {
       applyOnlineState(state);
     };
     online.onError = (msg) => toast(msg);
-    online.onJoined = ({ lanIp }) => {
-      const isLocal =
-        location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      if (lanIp && isLocal) {
-        els.inviteLan.textContent = `同 WiFi：http://${lanIp}:${location.port || 3456}`;
-        els.inviteLan.classList.remove('hidden');
-      } else {
-        els.inviteLan.classList.add('hidden');
-        if (location.protocol === 'https:') {
-          els.inviteLan.textContent =
-            '已使用雲端網址，各地手機皆可加入（免費方案首次開啟可能需等待約 30 秒）';
-          els.inviteLan.classList.remove('hidden');
-        }
-      }
-    };
   }
   if (!online.connected) {
     try {
