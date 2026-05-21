@@ -492,9 +492,10 @@ function applyOnlineState(state) {
 
 // --- Events ---
 
-document.querySelectorAll('.mode-card').forEach((btn) => {
+document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
   btn.addEventListener('click', () => {
     flow = btn.dataset.flow;
+    if (!flow) return;
     if (flow === 'local-duel') {
       playKind = 'local';
       localStyle = 'pass';
@@ -640,10 +641,7 @@ document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
   }
 });
 
-updateHomeStatsLine();
-syncHostCreateForm();
-
-// Online create
+// --- 線上開房表單 ---
 let hostMax = 2;
 let hostAi = 0;
 
@@ -652,8 +650,10 @@ const hostMaxWrap = document.getElementById('host-max-wrap');
 const hostDuelHint = document.getElementById('host-duel-hint');
 const hostMaxEl = document.getElementById('host-max');
 const hostAiEl = document.getElementById('host-ai');
+const btnCreateRoom = document.getElementById('btn-create-room');
 
 function syncHostCreateForm() {
+  if (!hostMode || !hostMaxWrap || !hostMaxEl || !hostAiEl) return;
   const isDuel = hostMode.value === 'duel';
   if (isDuel) {
     hostMax = 2;
@@ -669,7 +669,7 @@ function syncHostCreateForm() {
   hostAiEl.textContent = String(hostAi);
 }
 
-hostMode.addEventListener('change', syncHostCreateForm);
+hostMode?.addEventListener('change', syncHostCreateForm);
 
 document.getElementById('host-max-minus').addEventListener('click', () => {
   if (hostMode.value === 'duel') return;
@@ -693,7 +693,11 @@ document.getElementById('host-ai-plus').addEventListener('click', () => {
   hostAiEl.textContent = String(hostAi);
 });
 
-document.getElementById('btn-create-room').addEventListener('click', async () => {
+btnCreateRoom?.addEventListener('click', async () => {
+  if (!btnCreateRoom) return;
+  const prevText = btnCreateRoom.textContent;
+  btnCreateRoom.disabled = true;
+  btnCreateRoom.textContent = '連線中…';
   try {
     await ensureOnline();
     playKind = 'online';
@@ -701,8 +705,11 @@ document.getElementById('btn-create-room').addEventListener('click', async () =>
     const maxPlayers = m === 'duel' ? 2 : hostMax;
     const ai = m === 'duel' ? Math.min(hostAi, 1) : hostAi;
     online.create(m, document.getElementById('host-name').value, maxPlayers, ai);
-  } catch {
-    /* toast shown */
+  } catch (e) {
+    toast(e?.message || '無法連線伺服器');
+  } finally {
+    btnCreateRoom.disabled = false;
+    btnCreateRoom.textContent = prevText;
   }
 });
 
@@ -733,6 +740,9 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
   online = null;
   showScreen('home');
 });
+
+updateHomeStatsLine();
+syncHostCreateForm();
 
 // AI mode: mode toggle in setup for multi AI
 document.querySelectorAll('#field-player-count').forEach(() => {});
