@@ -34,9 +34,6 @@ import { showGunHome, showHub, registerStatsOpener } from './hub.js';
 let playKind = null;
 /** @type {GameMode|null} */
 let mode = null;
-/** @type {'pass'|'ai'} */
-let localStyle = 'pass';
-let setupCount = 3;
 let aiCount = 1;
 /** 單人 vs AI 多人模式：你 + 最多 9 位 AI（共 10 人） */
 const MAX_AI_OPPONENTS = 9;
@@ -65,9 +62,6 @@ const PLAYER_NAME_KEY = 'gun-duel-player-name';
 
 const els = {
   setupTitle: document.getElementById('setup-title'),
-  playerCount: document.getElementById('player-count'),
-  nameInputs: document.getElementById('name-inputs'),
-  fieldPlayerCount: document.getElementById('field-player-count'),
   fieldAiCount: document.getElementById('field-ai-count'),
   fieldAiMode: document.getElementById('field-ai-mode'),
   aiModeSelect: document.getElementById('ai-mode-select'),
@@ -207,27 +201,6 @@ function renderStatsScreen() {
   showScreen('stats');
 }
 
-function defaultNames(count) {
-  const d = ['小建', '小全', '玩家3', '玩家4', '玩家5', '玩家6', '玩家7', '玩家8', '玩家9', '玩家10'];
-  return Array.from({ length: count }, (_, i) => d[i] ?? `玩家${i + 1}`);
-}
-
-function renderNameInputs() {
-  if (localStyle === 'ai') {
-    els.nameInputs.innerHTML = '';
-    els.nameInputs.classList.add('hidden');
-    return;
-  }
-  els.nameInputs.classList.remove('hidden');
-  const names = defaultNames(setupCount);
-  els.nameInputs.innerHTML = names
-    .map(
-      (n, i) =>
-        `<label class="field"><span>玩家 ${i + 1}</span><input type="text" data-index="${i}" value="${escapeHtml(n)}" maxlength="12"></label>`
-    )
-    .join('');
-}
-
 // --- Local game UI ---
 
 function bindActionButtons(picker) {
@@ -296,12 +269,11 @@ function renderPlayerCards(players, phase, options = {}) {
 }
 
 function getMaxAiCount() {
-  if (localStyle !== 'ai') return Math.max(1, setupCount - 1);
   return els.aiModeSelect?.value === 'multi' ? MAX_AI_OPPONENTS : 1;
 }
 
 function syncAiCountStepper() {
-  if (localStyle !== 'ai' || !els.aiCount) return;
+  if (!els.aiCount) return;
   const max = getMaxAiCount();
   aiCount = Math.max(1, Math.min(aiCount, max));
   els.aiCount.textContent = String(aiCount);
@@ -328,31 +300,16 @@ function showGamePanels({ phase, canPick, isHost, playKind: pk }) {
 
 function startLocalGame() {
   playKind = 'local';
-  const yourName =
-    localStyle === 'ai'
-      ? els.inputYourName.value.trim() || '玩家'
-      : els.nameInputs.querySelector('input')?.value.trim() ||
-        getStoredPlayerName() ||
-        '玩家';
+  const yourName = els.inputYourName.value.trim() || getStoredPlayerName() || '玩家';
   setStoredPlayerName(yourName);
-  let roster;
-
-  if (localStyle === 'ai') {
-    const aiNum = mode === 'duel' ? 1 : aiCount;
-    roster = [{ name: yourName, isAi: false }];
-    for (let i = 0; i < aiNum; i++) roster.push({ name: `電腦 ${i + 1}`, isAi: true });
-  } else {
-    const inputs = els.nameInputs.querySelectorAll('input');
-    roster = Array.from(inputs).map((input, i) => ({
-      name: input.value.trim() || `玩家${i + 1}`,
-      isAi: false,
-    }));
-  }
+  const aiNum = mode === 'duel' ? 1 : aiCount;
+  const roster = [{ name: yourName, isAi: false }];
+  for (let i = 0; i < aiNum; i++) roster.push({ name: `電腦 ${i + 1}`, isAi: true });
 
   startMatchSession({
     game: 'gun',
     mode,
-    playKind: 'local',
+    playKind: 'ai',
     myName: yourName,
     myPlayerId: 'p0',
   });
@@ -363,13 +320,10 @@ function startLocalGame() {
       showGamePanels({ phase: 'pick', canPick: true, playKind: 'local' });
       els.roundLabel.textContent = `第 ${round} 回合`;
       els.phaseHint.textContent = isFinalRound ? '最後一回合！' : '你的回合';
-      els.selectPrompt.textContent =
-        localStyle === 'ai'
-          ? '選擇你的行動（AI 已自動選好）'
-          : `${picker.name}，請選擇行動`;
+      els.selectPrompt.textContent = '選擇你的行動（AI 已自動選好）';
       selectedAction = null;
       els.btnConfirm.disabled = true;
-      renderPlayerCards(players, 'pick', { youId: localStyle === 'ai' ? 'p0' : undefined });
+      renderPlayerCards(players, 'pick', { youId: 'p0' });
       bindActionButtons(picker);
     },
     onReveal: ({ round, players, logs, shouldEnd, awaitingFinalRound }) => {
@@ -546,39 +500,10 @@ document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
   btn.addEventListener('click', () => {
     flow = btn.dataset.flow;
     if (!flow) return;
-    if (flow === 'local-duel') {
+    if (flow === 'local-ai') {
       playKind = 'local';
-      localStyle = 'pass';
-      mode = 'duel';
-      els.setupTitle.textContent = '兩人對戰（本機）';
-      els.fieldPlayerCount.classList.add('hidden');
-      els.fieldAiCount.classList.add('hidden');
-      els.fieldAiMode.classList.add('hidden');
-      els.fieldYourName.classList.add('hidden');
-      setupCount = 2;
-      renderNameInputs();
-      showScreen('setup');
-    } else if (flow === 'local-multi') {
-      playKind = 'local';
-      localStyle = 'pass';
-      mode = 'multi';
-      els.setupTitle.textContent = '多人圍圈（本機）';
-      els.fieldPlayerCount.classList.remove('hidden');
-      els.fieldAiCount.classList.add('hidden');
-      els.fieldAiMode.classList.add('hidden');
-      els.fieldYourName.classList.add('hidden');
-      setupCount = 3;
-      els.playerCount.textContent = '3';
-      renderNameInputs();
-      showScreen('setup');
-    } else if (flow === 'local-ai') {
-      playKind = 'local';
-      localStyle = 'ai';
       mode = 'duel';
       els.setupTitle.textContent = '單人 vs AI';
-      els.fieldPlayerCount.classList.add('hidden');
-      els.fieldAiCount.classList.remove('hidden');
-      els.fieldAiMode.classList.remove('hidden');
       els.fieldYourName.classList.remove('hidden');
       aiCount = 1;
       els.aiModeSelect.onchange = () => {
@@ -588,7 +513,6 @@ document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
       };
       els.aiModeSelect.dispatchEvent(new Event('change'));
       syncAiCountStepper();
-      renderNameInputs();
       showScreen('setup');
     } else if (flow === 'online-create') {
       syncHostCreateForm();
@@ -604,20 +528,6 @@ document.querySelectorAll('[data-back="home"]').forEach((b) =>
   b.addEventListener('click', () => showGunHome())
 );
 
-document.getElementById('btn-count-minus').addEventListener('click', () => {
-  const min = localStyle === 'ai' ? 2 : mode === 'duel' ? 2 : 3;
-  setupCount = Math.max(min, setupCount - 1);
-  els.playerCount.textContent = String(setupCount);
-  if (localStyle === 'ai') aiCount = Math.min(aiCount, setupCount - 1);
-  renderNameInputs();
-});
-
-document.getElementById('btn-count-plus').addEventListener('click', () => {
-  setupCount = Math.min(10, setupCount + 1);
-  els.playerCount.textContent = String(setupCount);
-  renderNameInputs();
-});
-
 document.getElementById('btn-ai-minus').addEventListener('click', () => {
   aiCount = Math.max(1, aiCount - 1);
   syncAiCountStepper();
@@ -629,9 +539,7 @@ document.getElementById('btn-ai-plus').addEventListener('click', () => {
 });
 
 document.getElementById('btn-start-game').addEventListener('click', () => {
-  if (localStyle === 'ai') {
-    mode = els.aiModeSelect.value === 'multi' ? 'multi' : 'duel';
-  }
+  mode = els.aiModeSelect.value === 'multi' ? 'multi' : 'duel';
   startLocalGame();
 });
 

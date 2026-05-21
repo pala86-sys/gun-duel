@@ -41,16 +41,6 @@
         <p class="subtitle">暗中選牌 · 同時公布 · 比大小扣血</p>
       </header>
       <div class="mode-cards">
-        <button type="button" class="mode-card" data-flow="local-duel">
-          <span class="mode-icon">⚔️</span>
-          <strong>兩人對戰</strong>
-          <span>本機 · 3 滴血</span>
-        </button>
-        <button type="button" class="mode-card" data-flow="local-multi">
-          <span class="mode-icon">👥</span>
-          <strong>多人圍圈</strong>
-          <span>本機 · 5 滴血</span>
-        </button>
         <button type="button" class="mode-card" data-flow="local-ai">
           <span class="mode-icon">🤖</span>
           <strong>單人 vs AI</strong>
@@ -101,29 +91,21 @@
       </div>
     </section>
 
-    <!-- 本機設定 -->
+    <!-- 單人 vs AI 設定 -->
     <section id="screen-setup" class="screen">
       <header class="bar">
         <button type="button" class="btn-ghost" id="btn-setup-back">← 返回</button>
         <h2 id="setup-title">遊戲設定</h2>
       </header>
       <div class="setup-body">
-        <label class="field" id="field-player-count">
-          <span>玩家人數</span>
-          <div class="stepper">
-            <button type="button" id="btn-count-minus">−</button>
-            <output id="player-count">3</output>
-            <button type="button" id="btn-count-plus">+</button>
-          </div>
-        </label>
-        <label class="field hidden" id="field-ai-mode">
+        <label class="field" id="field-ai-mode">
           <span>對戰模式</span>
           <select id="ai-mode-select">
             <option value="duel">兩人（3 滴血）</option>
             <option value="multi">多人圍圈（5 滴血）</option>
           </select>
         </label>
-        <label class="field hidden" id="field-ai-count">
+        <label class="field" id="field-ai-count">
           <span>AI 對手數</span>
           <div class="stepper">
             <button type="button" id="btn-ai-minus">−</button>
@@ -135,7 +117,6 @@
           <span>你的名字</span>
           <input type="text" id="input-your-name" value="玩家" maxlength="12">
         </label>
-        <div id="name-inputs" class="name-grid"></div>
         <button type="button" class="btn-primary" id="btn-start-game">開始遊戲</button>
       </div>
     </section>
