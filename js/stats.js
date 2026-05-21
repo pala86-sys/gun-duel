@@ -47,13 +47,24 @@ export function getHistory(gameId) {
   return gameId ? list.filter((r) => r.game === gameId) : list;
 }
 
+function gameIdOf(record) {
+  return record.game || 'gun';
+}
+
 /** @param {GameId} [gameId] 不傳則清除全部 */
 export function clearHistory(gameId) {
   if (!gameId) {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_KEY);
     return;
   }
-  saveAll(loadAll().filter((r) => r.game !== gameId));
+  const remaining = loadAll().filter((r) => gameIdOf(r) !== gameId);
+  if (remaining.length === 0) {
+    localStorage.removeItem(STORAGE_KEY);
+    if (gameId === 'gun') localStorage.removeItem(LEGACY_KEY);
+  } else {
+    saveAll(remaining);
+  }
 }
 
 /**

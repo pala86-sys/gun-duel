@@ -237,11 +237,47 @@ function renderStatsScreen() {
       : '',
   ].join('');
 
-  document.getElementById('btn-clear-stats-gun')?.classList.toggle('hidden', filter !== 'gun');
-  document.getElementById('btn-clear-stats-chicken')?.classList.toggle('hidden', filter !== 'chicken');
-  document.getElementById('btn-clear-stats')?.classList.toggle('hidden', !!filter);
+  const gunBtn = document.getElementById('btn-clear-stats-gun');
+  const chBtn = document.getElementById('btn-clear-stats-chicken');
+  const allBtn = document.getElementById('btn-clear-stats');
+  gunBtn?.classList.toggle('hidden', !!(filter && filter !== 'gun'));
+  chBtn?.classList.toggle('hidden', !!(filter && filter !== 'chicken'));
+  allBtn?.classList.toggle('hidden', !!filter);
 
   showScreen('stats');
+}
+
+function bindStatsClearButtons() {
+  const panel = document.getElementById('screen-stats');
+  if (!panel || panel.dataset.clearBound) return;
+  panel.dataset.clearBound = '1';
+
+  panel.addEventListener('click', (e) => {
+    const id = e.target.closest('button')?.id;
+    if (id === 'btn-clear-stats') {
+      if (!confirm('確定清除兩款遊戲的所有戰績？')) return;
+      clearHistory();
+      renderStatsScreen();
+      updateHomeStatsLine();
+      toast('已清除全部戰績');
+      return;
+    }
+    if (id === 'btn-clear-stats-gun') {
+      if (!confirm(`確定清除「${GAME_LABELS.gun}」戰績？`)) return;
+      clearHistory('gun');
+      renderStatsScreen();
+      updateHomeStatsLine();
+      toast(`已清除${GAME_LABELS.gun}戰績`);
+      return;
+    }
+    if (id === 'btn-clear-stats-chicken') {
+      if (!confirm('確定清除怪盜雞排戰績？')) return;
+      clearHistory('chicken');
+      renderStatsScreen();
+      updateHomeStatsLine();
+      toast('已清除雞排戰績');
+    }
+  });
 }
 
 function statsBack() {
@@ -678,6 +714,7 @@ function bindGunEvents() {
 function bootApp() {
   bindHub(openChickenSetup);
   bindGunEvents();
+  bindStatsClearButtons();
   registerStatsOpener(renderStatsScreen);
   try {
     initChickenApp();
@@ -690,33 +727,6 @@ function bootApp() {
 }
 
 bootApp();
-
-document.getElementById('btn-clear-stats')?.addEventListener('click', () => {
-  if (confirm('確定清除兩款遊戲的所有戰績？')) {
-    clearHistory();
-    renderStatsScreen();
-    updateHomeStatsLine();
-    toast('已清除全部戰績');
-  }
-});
-
-document.getElementById('btn-clear-stats-gun')?.addEventListener('click', () => {
-  if (confirm(`確定清除「${GAME_LABELS.gun}」戰績？`)) {
-    clearHistory('gun');
-    renderStatsScreen();
-    updateHomeStatsLine();
-    toast(`已清除${GAME_LABELS.gun}戰績`);
-  }
-});
-
-document.getElementById('btn-clear-stats-chicken')?.addEventListener('click', () => {
-  if (confirm('確定清除怪盜雞排戰績？')) {
-    clearHistory('chicken');
-    renderStatsScreen();
-    updateHomeStatsLine();
-    toast('已清除雞排戰績');
-  }
-});
 
 // --- 線上開房表單 ---
 let hostMax = 2;
