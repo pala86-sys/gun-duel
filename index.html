@@ -241,27 +241,7 @@
         <h2>怪盜雞排 vs 魯蛇三世</h2>
       </header>
       <div class="setup-body">
-        <div class="mode-cards ch-setup-modes">
-          <button type="button" class="mode-card ch-flow-card active" data-ch-flow="pass">
-            <span class="mode-icon">📲</span>
-            <strong>本機傳手機</strong>
-            <span>2～4 人輪流選</span>
-          </button>
-          <button type="button" class="mode-card ch-flow-card" data-ch-flow="ai">
-            <span class="mode-icon">🤖</span>
-            <strong>單人 vs AI</strong>
-            <span>你對電腦 · 1～3 位 AI</span>
-          </button>
-        </div>
-        <label class="field" id="field-ch-player-count">
-          <span id="ch-count-label">玩家人數（2～4）</span>
-          <div class="stepper">
-            <button type="button" id="btn-ch-count-minus">−</button>
-            <output id="ch-player-count">2</output>
-            <button type="button" id="btn-ch-count-plus">+</button>
-          </div>
-        </label>
-        <label class="field hidden" id="field-ch-ai-count">
+        <label class="field" id="field-ch-ai-count">
           <span>AI 對手數</span>
           <div class="stepper">
             <button type="button" id="btn-ch-ai-minus">−</button>
@@ -277,10 +257,7 @@
             <option value="none">最簡（無特殊效果）</option>
           </select>
         </label>
-        <div id="ch-pass-names">
-          <div id="ch-name-inputs" class="name-grid"></div>
-        </div>
-        <label class="field hidden" id="field-ch-your-name">
+        <label class="field" id="field-ch-your-name">
           <span>你的名字</span>
           <input type="text" id="ch-your-name" value="怪盜雞排" maxlength="12">
         </label>
@@ -292,8 +269,8 @@
             <p><strong>1</strong> 再偷 · <strong>2</strong> 鑰匙解鎖 5 · <strong>3</strong> 扣分 · <strong>5</strong> 需鑰匙才能偷</p>
           </div>
         </details>
-        <button type="button" class="btn-primary" id="btn-ch-start">本機遊戲（傳手機）</button>
-        <p class="hint" id="ch-setup-hint">同一裝置輪流操作，選牌時勿讓他人看到。</p>
+        <button type="button" class="btn-primary" id="btn-ch-start">開始對戰（單人 vs AI）</button>
+        <p class="hint" id="ch-setup-hint">僅由你操作；AI 會自動選牌。兩人模式固定 1 位 AI。</p>
         <button type="button" class="mode-card highlight" id="btn-ch-online-create" style="width:100%;margin-top:10px">
           <strong>📱 開房（各用手機）</strong>
         </button>
