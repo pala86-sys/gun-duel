@@ -673,24 +673,34 @@ select {
 .stats-body {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
+  padding-bottom: 24px;
 }
 
-.stats-overview {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+/* 多款遊戲戰績：直向排列 */
+.stats-games-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .stats-game-block {
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .stats-game-title {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--gold);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-weight: 700;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.stats-game-block .stats-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .stats-section-label {
@@ -716,20 +726,24 @@ select {
 .stat-box {
   background: var(--surface);
   border-radius: var(--radius);
-  padding: 14px 8px;
+  padding: 18px 10px;
   text-align: center;
+  min-width: 0;
 }
 
 .stat-box .num {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: var(--gold);
+  line-height: 1.2;
 }
 
 .stat-box .lbl {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 8px;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .stats-list {

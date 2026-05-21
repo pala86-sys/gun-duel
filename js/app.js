@@ -28,11 +28,12 @@ import {
 import {
   showGunHome,
   showHub,
+  bindHub,
   registerStatsOpener,
   statsFilterGame,
   openStatsScreen,
 } from './hub.js';
-import { openChickenSetup } from './chicken-app.js';
+import { initChickenApp, openChickenSetup } from './chicken-app.js';
 
 /** @typedef {'local'|'online'} PlayKind */
 /** @typedef {'duel'|'multi'} GameMode */
@@ -189,7 +190,7 @@ function renderStatsOverviewBlock(gameId, icon) {
       <h3 class="stats-game-title">${icon} ${label}</h3>
       <div class="stats-overview">
         <div class="stat-box"><div class="num">${sum.total}</div><div class="lbl">場次</div></div>
-        <div class="stat-box"><div class="num">${sum.wins}</div><div class="lbl">勝/存活</div></div>
+        <div class="stat-box"><div class="num">${sum.wins}</div><div class="lbl">勝場</div></div>
         <div class="stat-box"><div class="num">${sum.winRate}%</div><div class="lbl">勝率</div></div>
       </div>
     </div>`;
@@ -545,6 +546,17 @@ function applyOnlineState(state) {
 
 // --- Events ---
 
+function bootApp() {
+  bindHub(openChickenSetup);
+  initChickenApp();
+  registerStatsOpener(renderStatsScreen);
+  window.__updateStatsLines = updateHomeStatsLine;
+  updateHomeStatsLine();
+  syncHostCreateForm();
+}
+
+bootApp();
+
 document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
   btn.addEventListener('click', () => {
     flow = btn.dataset.flow;
@@ -572,22 +584,22 @@ document.querySelectorAll('.mode-card[data-flow]').forEach((btn) => {
   });
 });
 
-document.getElementById('btn-setup-back').addEventListener('click', () => showGunHome());
+document.getElementById('btn-setup-back')?.addEventListener('click', () => showGunHome());
 document.querySelectorAll('[data-back="home"]').forEach((b) =>
   b.addEventListener('click', () => showGunHome())
 );
 
-document.getElementById('btn-ai-minus').addEventListener('click', () => {
+document.getElementById('btn-ai-minus')?.addEventListener('click', () => {
   aiCount = Math.max(1, aiCount - 1);
   syncAiCountStepper();
 });
 
-document.getElementById('btn-ai-plus').addEventListener('click', () => {
+document.getElementById('btn-ai-plus')?.addEventListener('click', () => {
   aiCount = Math.min(getMaxAiCount(), aiCount + 1);
   syncAiCountStepper();
 });
 
-document.getElementById('btn-start-game').addEventListener('click', () => {
+document.getElementById('btn-start-game')?.addEventListener('click', () => {
   mode = els.aiModeSelect.value === 'multi' ? 'multi' : 'duel';
   startLocalGame();
 });
@@ -612,7 +624,7 @@ els.btnNextRound.addEventListener('click', () => {
   if (playKind === 'online' && online) online.next();
 });
 
-document.getElementById('btn-quit').addEventListener('click', () => {
+document.getElementById('btn-quit')?.addEventListener('click', () => {
   if (confirm('確定離開？')) {
     cancelMatchSession();
     online?.disconnect();
@@ -622,12 +634,12 @@ document.getElementById('btn-quit').addEventListener('click', () => {
   }
 });
 
-document.getElementById('btn-play-again').addEventListener('click', () => {
+document.getElementById('btn-play-again')?.addEventListener('click', () => {
   if (playKind === 'online') showScreen('lobby');
   else showScreen('setup');
 });
 
-document.getElementById('btn-home').addEventListener('click', () => {
+document.getElementById('btn-home')?.addEventListener('click', () => {
   online?.disconnect();
   online = null;
   showHub();
@@ -694,23 +706,23 @@ function syncHostCreateForm() {
 
 hostMode?.addEventListener('change', syncHostCreateForm);
 
-document.getElementById('host-max-minus').addEventListener('click', () => {
+document.getElementById('host-max-minus')?.addEventListener('click', () => {
   if (hostMode.value === 'duel') return;
   hostMax = Math.max(3, hostMax - 1);
   hostMaxEl.textContent = String(hostMax);
   hostAi = Math.min(hostAi, hostMax - 1);
   hostAiEl.textContent = String(hostAi);
 });
-document.getElementById('host-max-plus').addEventListener('click', () => {
+document.getElementById('host-max-plus')?.addEventListener('click', () => {
   if (hostMode.value === 'duel') return;
   hostMax = Math.min(10, hostMax + 1);
   hostMaxEl.textContent = String(hostMax);
 });
-document.getElementById('host-ai-minus').addEventListener('click', () => {
+document.getElementById('host-ai-minus')?.addEventListener('click', () => {
   hostAi = Math.max(0, hostAi - 1);
   hostAiEl.textContent = String(hostAi);
 });
-document.getElementById('host-ai-plus').addEventListener('click', () => {
+document.getElementById('host-ai-plus')?.addEventListener('click', () => {
   const cap = hostMode.value === 'duel' ? 1 : hostMax - 1;
   hostAi = Math.min(cap, hostAi + 1);
   hostAiEl.textContent = String(hostAi);
@@ -736,7 +748,7 @@ btnCreateRoom?.addEventListener('click', async () => {
   }
 });
 
-document.getElementById('btn-join-room').addEventListener('click', async () => {
+document.getElementById('btn-join-room')?.addEventListener('click', async () => {
   const code = document.getElementById('join-code').value.trim().toUpperCase();
   if (code.length !== 4) {
     els.joinError.textContent = '請輸入 4 碼房間代碼';
@@ -753,25 +765,14 @@ document.getElementById('btn-join-room').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('btn-lobby-start').addEventListener('click', () => {
+document.getElementById('btn-lobby-start')?.addEventListener('click', () => {
   online?.start();
 });
 
-document.getElementById('btn-leave-lobby').addEventListener('click', () => {
+document.getElementById('btn-leave-lobby')?.addEventListener('click', () => {
   cancelMatchSession();
   online?.disconnect();
   online = null;
   showHub();
 });
-
-registerStatsOpener(renderStatsScreen);
-window.__updateStatsLines = updateHomeStatsLine;
-updateHomeStatsLine();
-syncHostCreateForm();
-
-// AI mode: mode toggle in setup for multi AI
-document.querySelectorAll('#field-player-count').forEach(() => {});
-
-// Fix local AI mode to allow multi - add mode select in setup for ai? 
-// For simplicity AI uses duel by default; user can change via hidden - add quick toggle in setup for ai
 

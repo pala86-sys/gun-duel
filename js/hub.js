@@ -1,5 +1,3 @@
-import { initChickenApp, openChickenSetup } from './chicken-app.js';
-
 /** @typedef {'gun'|'chicken'} StatsGameId */
 /** @type {StatsGameId|null} */
 export let statsFilterGame = null;
@@ -27,11 +25,10 @@ export function showGunHome() {
   document.getElementById('screen-home')?.classList.add('active');
 }
 
-document.getElementById('btn-hub-gun')?.addEventListener('click', showGunHome);
-document.getElementById('btn-hub-chicken')?.addEventListener('click', openChickenSetup);
-
-document.getElementById('btn-hub-stats')?.addEventListener('click', () => openStatsScreen(null));
-
-document.getElementById('btn-gun-home-back')?.addEventListener('click', showHub);
-
-initChickenApp();
+/** @param {() => void} openChickenSetup */
+export function bindHub(openChickenSetup) {
+  document.getElementById('btn-hub-gun')?.addEventListener('click', showGunHome);
+  document.getElementById('btn-hub-chicken')?.addEventListener('click', openChickenSetup);
+  document.getElementById('btn-hub-stats')?.addEventListener('click', () => openStatsScreen(null));
+  document.getElementById('btn-gun-home-back')?.addEventListener('click', showHub);
+}
