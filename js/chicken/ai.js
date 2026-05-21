@@ -27,28 +27,46 @@ export function pickChickenThiefSpot(game, player) {
   return legal[legal.length - 1];
 }
 
+/** 防守盲選 2 格：不可讀取偷竊方已選號碼 */
+function pickTwoGuardSpotsBlind() {
+  const pool = [
+    { spot: 4, w: 4 },
+    { spot: 5, w: 3 },
+    { spot: 3, w: 2 },
+    { spot: 2, w: 1.5 },
+    { spot: 1, w: 1 },
+  ];
+  const picks = [];
+  const remaining = [...pool];
+  while (picks.length < 2 && remaining.length) {
+    const total = remaining.reduce((s, x) => s + x.w, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < remaining.length; i++) {
+      r -= remaining[i].w;
+      if (r <= 0) {
+        picks.push(remaining[i].spot);
+        remaining.splice(i, 1);
+        break;
+      }
+    }
+  }
+  return picks;
+}
+
 /**
  * @param {import('./game.js').ChickenGame} game
- * @param {{ id: string }} picker
+ * @param {{ id: string, isAi?: boolean }} picker
  * @returns {number[]}
  */
 export function pickChickenGuardSpots(game, picker) {
   if (game.mode === '2p' && game.phase === 'guard-pick') {
-    const thief = game.players[game.thiefIndex];
-    const thiefPick = thief?.pick;
-    const picks = new Set();
-    if (typeof thiefPick === 'number') picks.add(thiefPick);
-    for (const spot of [5, 4, 3, 2, 1]) {
-      if (picks.size >= 2) break;
-      picks.add(spot);
-    }
-    return [...picks].slice(0, 2);
+    // 實體規則：守方選 2 格時不知道偷了哪一格，AI 不可讀 thief.pick
+    return pickTwoGuardSpotsBlind();
   }
 
   if (game.mode === 'multi' && game.phase === 'guard-pick') {
-    const preferred = [5, 4, 3, 2, 1];
     if (Math.random() < 0.75) return [4, 5];
-    return [preferred[0], preferred[1]];
+    return pickTwoGuardSpotsBlind();
   }
 
   return [4, 5];
