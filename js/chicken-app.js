@@ -83,8 +83,17 @@ export function getPhaseText(state) {
     if (state.phase === 'thief-pick') return `${picker.name} 偷竊（選 1 個）`;
     if (state.phase === 'guard-pick') return `${picker.name} 防守（選 2 個）`;
   } else {
-    if (state.phase === 'guard-pick') return `${picker.name} 起始守衛（選 2 個）`;
-    if (state.phase === 'thieves-pick') return `${picker.name} 偷竊（選 1 個）`;
+    if (state.phase === 'guard-pick') {
+      if (state.extraStealQueue?.length) {
+        const bonus = state.players.find((p) => p.id === state.extraStealQueue[0]);
+        return `${picker.name} 防守加偷（選 2 個）· ${bonus?.name || '玩家'} 再偷一次`;
+      }
+      return `${picker.name} 起始守衛（選 2 個）`;
+    }
+    if (state.phase === 'thieves-pick') {
+      if (state.extraStealQueue?.length) return `${picker.name} 加偷（選 1 個）`;
+      return `${picker.name} 偷竊（選 1 個）`;
+    }
   }
   return '';
 }

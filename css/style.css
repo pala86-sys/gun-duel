@@ -36,6 +36,26 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.boot-warn {
+  max-width: 520px;
+  margin: 12px auto 0;
+  padding: 14px 16px;
+  background: rgba(201, 74, 74, 0.15);
+  border: 2px solid var(--red-bright);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  z-index: 2000;
+}
+
+.boot-warn code {
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
 #app {
   min-height: 100%;
   max-width: 520px;

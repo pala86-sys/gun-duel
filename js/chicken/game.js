@@ -213,9 +213,10 @@ export class ChickenGame {
           this.effectMode
         );
         this.lastLogs = [...(this.lastLogs || []), ...res.logs];
+        picker.pick = null;
         this.extraStealQueue.shift();
         if (this.extraStealQueue.length) {
-          this.notify();
+          this.beginBonusGuardPhase();
           return {};
         }
         this.phase = 'reveal';
@@ -249,13 +250,23 @@ export class ChickenGame {
     this.lastLogs = res.logs;
     this.extraStealQueue = res.extraStealQueue || [];
     if (this.extraStealQueue.length) {
-      this.phase = 'thieves-pick';
-      this.notify();
+      this.beginBonusGuardPhase();
       return {};
     }
     this.phase = 'reveal';
     this.cb.onReveal?.(this.getPublicState());
     return {};
+  }
+
+  /** 多人：1 號再偷前，起始玩家重新選 2 格防守 */
+  beginBonusGuardPhase() {
+    this.pendingGuardPicks = null;
+    this.starter.picks = [];
+    this.players.forEach((p) => {
+      if (p.id !== this.starter.id) p.pick = null;
+    });
+    this.phase = 'guard-pick';
+    this.notify();
   }
 
   advanceAfterReveal() {
@@ -310,6 +321,7 @@ export class ChickenGame {
       starterIndex: this.starterIndex,
       thiefIndex: this.thiefIndex,
       extraSteal2p: this.extraSteal2p,
+      extraStealQueue: [...this.extraStealQueue],
       lastLogs: this.lastLogs,
       pickerId: picker?.id ?? null,
       pickLimit: this.getPickLimit(),

@@ -74,9 +74,13 @@ export function pickChickenGuardSpots(game, picker) {
   }
 
   if (game.mode === 'multi' && game.phase === 'guard-pick') {
-    const anyThiefHasKey = game.players.some((p) => p.id !== picker.id && p.hasKey);
-    if (anyThiefHasKey && Math.random() < 0.65) return [4, 5];
-    return pickTwoGuardSpotsBlind({ thiefHasKey: anyThiefHasKey });
+    let thiefHasKey = game.players.some((p) => p.id !== picker.id && p.hasKey);
+    if (game.extraStealQueue?.length) {
+      const bonusThief = game.players.find((p) => p.id === game.extraStealQueue[0]);
+      thiefHasKey = !!bonusThief?.hasKey;
+    }
+    if (thiefHasKey && Math.random() < 0.65) return [4, 5];
+    return pickTwoGuardSpotsBlind({ thiefHasKey });
   }
 
   return [4, 5];

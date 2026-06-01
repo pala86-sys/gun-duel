@@ -801,21 +801,42 @@ function bindHostOnlineEvents() {
   });
 }
 
-function bootApp() {
-  bindHub(openChickenSetup);
-  bindGunEvents();
-  bindStatsClearButtons();
-  bindHostOnlineEvents();
-  registerStatsOpener(renderStatsScreen);
-  try {
-    initChickenApp();
-  } catch (err) {
-    console.error('雞排模組初始化失敗', err);
+function showBootError(msg) {
+  const el = document.getElementById('boot-warn');
+  if (!el) {
+    console.error(msg);
+    return;
   }
-  window.__updateStatsLines = updateHomeStatsLine;
-  updateHomeStatsLine();
-  syncHostCreateForm();
+  el.innerHTML = `<strong>啟動失敗</strong><br>${msg}`;
+  el.classList.remove('hidden');
 }
 
-bootApp();
+function bootApp() {
+  try {
+    bindHub(openChickenSetup);
+    bindGunEvents();
+    bindStatsClearButtons();
+    bindHostOnlineEvents();
+    registerStatsOpener(renderStatsScreen);
+    try {
+      initChickenApp();
+    } catch (err) {
+      console.error('雞排模組初始化失敗', err);
+    }
+    window.__updateStatsLines = updateHomeStatsLine;
+    updateHomeStatsLine();
+    syncHostCreateForm();
+  } catch (err) {
+    console.error('bootApp', err);
+    showBootError(
+      '請在專案資料夾執行 npm start，用 http://localhost:3456 開啟。若仍失敗請重新整理或查看主控台。'
+    );
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
+}
 

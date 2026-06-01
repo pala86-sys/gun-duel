@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="boot-warn" class="boot-warn hidden" role="alert"></div>
   <div id="app">
     <!-- 遊戲選擇 -->
     <section id="screen-hub" class="screen active">
@@ -388,6 +389,34 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <script>
+    (function () {
+      function showBootWarn(html) {
+        var el = document.getElementById('boot-warn');
+        if (!el) return;
+        el.innerHTML = html;
+        el.classList.remove('hidden');
+      }
+      if (location.protocol === 'file:') {
+        document.addEventListener('DOMContentLoaded', function () {
+          showBootWarn(
+            '<strong>無法直接開啟 index.html</strong><br>' +
+              '請在專案資料夾執行 <code>npm start</code>，瀏覽器開啟 ' +
+              '<code>http://localhost:3456</code>。<br>' +
+              '雲端版請使用 Render 網址（例如 gun-duel.onrender.com）。'
+          );
+        });
+      }
+      window.addEventListener('error', function (e) {
+        var src = e.filename || (e.target && e.target.src) || '';
+        if (String(src).indexOf('app.js') >= 0) {
+          showBootWarn(
+            '<strong>遊戲程式未載入</strong><br>請用 <code>npm start</code> 或雲端網址開啟，勿雙擊 html 檔。'
+          );
+        }
+      }, true);
+    })();
+  </script>
   <script src="js/app.js" type="module"></script>
 </body>
 </html>

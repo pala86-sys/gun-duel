@@ -110,7 +110,8 @@ export function resolveRound(ps, gameMode) {
   const logs = [];
   let eliminatedCount = 0;
 
-  if (gameMode === 'duel' && active.length >= 2) {
+  // 場上僅剩兩人時改為一對一比大小（含多人局尾聲），避免左右鄰居皆為同一人而扣兩次血
+  if (active.length === 2) {
     const [a, b] = active;
     const ca = choices.get(a.id);
     const cb = choices.get(b.id);
